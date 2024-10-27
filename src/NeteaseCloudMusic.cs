@@ -111,35 +111,12 @@ namespace ncmdump_net.src
             var buffer = new byte[0x8000];
             var findFormatFlag = false;
 
-            FileStream? outputStream;
+            FileStream? outputStream = null;
 
-            if (!findFormatFlag)
-            {
-                if (buffer[0] == 0x49 && buffer[1] == 0x44 && buffer[2] == 0x33)
-                {
-                    Format = NcmFormat.Mp3;
-                    DumpFilePath = Path.ChangeExtension(DumpFilePath, ".mp3");
-                }
-                else
-                {
-                    Format = NcmFormat.Flac;
-                    DumpFilePath = Path.ChangeExtension(DumpFilePath, ".flac");
-                }
-            }
             if (targetDir != "")
             {
                 // change save dir
                 DumpFilePath = Path.Join(targetDir, Path.GetFileName(DumpFilePath));
-            }
-            findFormatFlag = true;
-
-            try
-            {
-                outputStream = File.Create(DumpFilePath);
-            }
-            catch (Exception)
-            {
-                throw new Exception("create output file failed");
             }
 
             while (true)
@@ -156,7 +133,33 @@ namespace ncmdump_net.src
                     var j = (i + 1) & 0xff;
                     buffer[i] ^= KeyBox[(KeyBox[j] + KeyBox[(KeyBox[j] + j) & 0xff]) & 0xff];
                 }
-                outputStream.Write(buffer);
+
+                if (!findFormatFlag)
+                {
+                    if (buffer[0] == 0x49 && buffer[1] == 0x44 && buffer[2] == 0x33)
+                    {
+                        Format = NcmFormat.Mp3;
+                        DumpFilePath = Path.ChangeExtension(DumpFilePath, ".mp3");
+                    }
+                    else
+                    {
+                        Format = NcmFormat.Flac;
+                        DumpFilePath = Path.ChangeExtension(DumpFilePath, ".flac");
+                    }
+
+                    try
+                    {
+                        outputStream = File.Create(DumpFilePath);
+                    }
+                    catch (Exception)
+                    {
+                        throw new Exception("create output file failed");
+                    }
+
+                    findFormatFlag = true;
+                }
+
+                outputStream!.Write(buffer);
             }
             outputStream?.Close();
         }
