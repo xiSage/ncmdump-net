@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "ncmdump-net": {
+      "commandName": "Project"
+    },
+    "配置文件 1": {
+      "commandName": "Project",
+      "commandLineArgs": "\"F:\\Musics\\VipSongsDownload\\DECO27,初音ミク - 人質交換.ncm\""
+    }
+  }
+}
