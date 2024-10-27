@@ -13,6 +13,10 @@ internal class Program
             {
                 InputFiles.Add(args[i].Trim('\'', '"'));
             }
+            else
+            {
+                break;
+            }
         }
 
         if (i < args.Length)
@@ -23,29 +27,35 @@ internal class Program
         {
             args = [];
         }
-        ConsoleApp.Version = "1.0";
+        ConsoleApp.Version = "1.0.1";
         ConsoleApp.Run(args, Commands.Process);
     }
 
     static class Commands
     {
-        public static void Process(string o = "", string? d = null, bool r = false)
+        /// <summary>
+        /// Process the input files or directories.
+        /// </summary>
+        /// <param name="outputDir">-o, Output directory.</param>
+        /// <param name="inputDir">-i|-d, Input directory.</param>
+        /// <param name="recursive">-r, Recursive processing of directories.</param>
+        public static void Process(string outputDir = "", string? inputDir = null, bool recursive = false)
         {
             foreach (string inputFile in InputFiles)
             {
                 Console.WriteLine($"[Info] Processing '{inputFile}'");
                 try
                 {
-                    ProcessFile(inputFile, o);
+                    ProcessFile(inputFile, outputDir);
                 }
                 catch (Exception)
                 {
                     Console.WriteLine($"[Error] Failed to process file '{inputFile}");
                 }
             }
-            if (d is not null)
+            if (inputDir is not null)
             {
-                ProcessDirectory(d, o, r);
+                ProcessDirectory(inputDir, outputDir, recursive);
             }
         }
     }
@@ -116,7 +126,7 @@ internal class Program
         {
             foreach (var subdir in dir.GetDirectories())
             {
-                ProcessDirectory(subdir.FullName, outputDir, recursive);
+                ProcessDirectory(subdir.FullName, Path.Combine(outputDir, subdir.Name), recursive);
             }
         }
     }

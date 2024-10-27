@@ -149,11 +149,16 @@ namespace ncmdump_net.src
 
                     try
                     {
+                        var path = Path.GetDirectoryName(DumpFilePath);
+                        if (path is not null)
+                        {
+                            Directory.CreateDirectory(path);
+                        }
                         outputStream = File.Create(DumpFilePath);
                     }
                     catch (Exception)
                     {
-                        throw new Exception("create output file failed");
+                        throw new Exception($"create output file failed at \"{DumpFilePath}\"");
                     }
 
                     findFormatFlag = true;
