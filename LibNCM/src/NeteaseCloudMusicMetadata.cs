@@ -2,10 +2,10 @@ using System.Text.Json.Nodes;
 
 namespace ncmdump_net.src
 {
-    internal class NeteaseCloudMusicMetadata
+    public struct NeteaseCloudMusicMetadata
     {
         public string Album;
-        public string[] Artist;
+        public List<string> Artist;
         public string Fromat;
         public string Name;
         public long Duration;
@@ -14,7 +14,7 @@ namespace ncmdump_net.src
         public NeteaseCloudMusicMetadata(string meta)
         {
             Album = "";
-            Artist = [];
+            Artist = new(5);
             Fromat = "";
             Name = "";
             Duration = 0;
@@ -30,12 +30,11 @@ namespace ncmdump_net.src
                 var artists = json["artist"]?.AsArray();
                 if (artists != null && artists.Count > 0)
                 {
-                    Artist = new string[artists.Count];
                     for (int i = 0; i < artists.Count; i++)
                     {
                         if (artists[i] is JsonArray array)
                         {
-                            Artist[i] = array[0]?.GetValue<string>()?? "";
+                            Artist.Add(array[0]?.GetValue<string>()?? "");
                         }
                     }
                 }

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ConsoleApp": {
+      "commandName": "Project",
+      "commandLineArgs": "\"F:\\Musics\\VipSongsDownload\\test\\DECO27,初音ミク - 人質交換.ncm\""
+    }
+  }
+}

@@ -3,7 +3,7 @@ using ncmdump_net.src;
 
 internal class Program
 {
-    static private readonly List<string> InputFiles = [];
+    private static readonly List<string> InputFiles = [];
     private static void Main(string[] args)
     {
         var i = 0;
@@ -19,15 +19,8 @@ internal class Program
             }
         }
 
-        if (i < args.Length)
-        {
-            args = args[i..];
-        }
-        else
-        {
-            args = [];
-        }
-        ConsoleApp.Version = "1.0.1";
+        args = i < args.Length ? args[i..] : ([]);
+        ConsoleApp.Version = "1.1.0";
         ConsoleApp.Run(args, Commands.Process);
     }
 
@@ -39,7 +32,7 @@ internal class Program
         /// <param name="outputDir">-o, Output directory.</param>
         /// <param name="inputDir">-i|-d, Input directory.</param>
         /// <param name="recursive">-r, Recursive processing of directories.</param>
-        public static void Process(string outputDir = "", string? inputDir = null, bool recursive = false)
+        public static void Process(string? outputDir = null, string? inputDir = null, bool recursive = false)
         {
             foreach (string inputFile in InputFiles)
             {
@@ -60,7 +53,7 @@ internal class Program
         }
     }
 
-    private static void ProcessFile(string filePath, string outputDir)
+    private static void ProcessFile(string filePath, string? outputDir)
     {
         // skip if the extension is not .ncm
         if (!Path.GetExtension(filePath).Equals(".ncm", StringComparison.CurrentCultureIgnoreCase))
@@ -68,21 +61,25 @@ internal class Program
             return;
         }
 
+        var fileName = Path.GetFileNameWithoutExtension(filePath);
+        outputDir ??= Path.GetDirectoryName(filePath) ?? "./";
+
         // process the file
-        NeteaseCloudMusic? currentFile;
+        NeteaseCloudMusicStream? currentFile = null;
         try
         {
-            currentFile = new NeteaseCloudMusic(filePath);
+            currentFile = new NeteaseCloudMusicStream(filePath);
         }
         catch (Exception e)
         {
             Console.WriteLine($"[Error] Reading '{filePath}' failed: {e.Message}");
+            currentFile?.Dispose();
             throw new Exception("failed to process file");
         }
 
         try
         {
-            currentFile.Dump(outputDir);
+            currentFile.DumpToFile(outputDir!, fileName);
             try
             {
                 currentFile.FixMetadata(true);
@@ -92,7 +89,7 @@ internal class Program
                 Console.WriteLine($"[Warning] Fixing metadata of '{filePath}' failed: {e.Message}");
                 throw new Exception("failed to process file");
             }
-            Console.WriteLine($"[Done] Processed '{filePath}' to '{currentFile.GetDumpFilePath()}'");
+            Console.WriteLine($"[Done] Processed '{filePath}' to '{outputDir}'");
             return;
         }
         catch (Exception e)
@@ -100,10 +97,15 @@ internal class Program
             Console.WriteLine($"[Error] Processing '{filePath}' failed: {e.Message}");
             throw new Exception("failed to process file");
         }
+        finally
+        {
+            currentFile?.Dispose();
+        }
     }
 
-    private static void ProcessDirectory(string directoryPath, string outputDir, bool recursive)
+    private static void ProcessDirectory(string directoryPath, string? outputDir, bool recursive)
     {
+        outputDir ??= directoryPath;
         var dir = new DirectoryInfo(directoryPath);
         if (!dir.Exists)
         {
