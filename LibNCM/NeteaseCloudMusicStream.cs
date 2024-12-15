@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
 
-namespace ncmdump_net.src
+namespace LibNCM
 {
     public class NeteaseCloudMusicStream : Stream, TagLib.File.IFileAbstraction
     {
@@ -24,7 +24,7 @@ namespace ncmdump_net.src
         public byte[]? ImageData { get; private set; }
         private readonly Stream _rawStream;
         private FileStream? _outputStream = null;
-        public byte[] KeyBox { get; } =  new byte[256];
+        public byte[] KeyBox { get; } = new byte[256];
         public NeteaseCloudMusicMetadata? Metadata { get; private set; }
         public string? AlbumPicUrl { get; private set; }
 
@@ -125,7 +125,7 @@ namespace ncmdump_net.src
             for (var i = 0; i < 256; i++)
             {
                 byte swap = KeyBox[i];
-                byte c = (byte)((swap + lastByte + key[keyOffset]) & 0xff);
+                byte c = (byte)(swap + lastByte + key[keyOffset] & 0xff);
                 keyOffset++;
                 if (keyOffset >= keyLen)
                 {
@@ -149,8 +149,8 @@ namespace ncmdump_net.src
         {
             for (var i = 0; i < buffer.Length; i++)
             {
-                var j = (i + 1) & 0xff;
-                buffer[i] ^= KeyBox[(KeyBox[j] + KeyBox[(KeyBox[j] + j) & 0xff]) & 0xff];
+                var j = i + 1 & 0xff;
+                buffer[i] ^= KeyBox[KeyBox[j] + KeyBox[KeyBox[j] + j & 0xff] & 0xff];
             }
         }
 
@@ -463,7 +463,7 @@ namespace ncmdump_net.src
 
         private static string? GetAlbumPicUrl(string meta)
         {
-            var json = JsonObject.Parse(meta) as JsonObject;
+            var json = JsonNode.Parse(meta) as JsonObject;
             return json?["albumPic"]?.ToString();
         }
 

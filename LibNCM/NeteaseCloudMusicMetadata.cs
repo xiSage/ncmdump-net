@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-namespace ncmdump_net.src
+namespace LibNCM
 {
     public struct NeteaseCloudMusicMetadata
     {
@@ -22,7 +22,7 @@ namespace ncmdump_net.src
 
             if (meta == null || meta.Length == 0) { return; }
 
-            if (JsonObject.Parse(meta) is JsonObject json)
+            if (JsonNode.Parse(meta) is JsonObject json)
             {
                 if (json["musicName"] is JsonValue musicName) { Name = musicName.GetValue<string>(); }
                 if (json["album"] is JsonValue album) { Album = album.GetValue<string>(); }
@@ -34,7 +34,7 @@ namespace ncmdump_net.src
                     {
                         if (artists[i] is JsonArray array)
                         {
-                            Artist.Add(array[0]?.GetValue<string>()?? "");
+                            Artist.Add(array[0]?.GetValue<string>() ?? "");
                         }
                     }
                 }

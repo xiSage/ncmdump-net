@@ -1,5 +1,5 @@
 using ConsoleAppFramework;
-using ncmdump_net.src;
+using LibNCM;
 
 internal class Program
 {
