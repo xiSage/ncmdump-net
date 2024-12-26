@@ -426,7 +426,7 @@ namespace LibNCM
 
             // determine the format of the music file
             var buffer = n.AsSpan()[0..3];
-            if (ReadRaw(buffer) != 3)
+            if (Read(buffer) != 3)
             {
                 throw new Exception("read format failed");
             }
