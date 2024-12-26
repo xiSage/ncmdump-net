@@ -1,0 +1,77 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DesktopApp.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="DesktopApp.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="ncmdump"
+        MinWidth="800" MinHeight="450"
+        Width="800" Height="450">
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <DockPanel LastChildFill="True">
+        <Border BorderBrush="Gray"
+                BorderThickness="2"
+                CornerRadius="3"
+                Padding="10" Margin="10"
+                DockPanel.Dock="Top"
+                Height="100">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" >
+                <Button Content="添加文件" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="20" Command="{Binding SelectFileCommand}"/>
+				<Button Content="添加文件夹" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="20" Command="{Binding SelectFolderCommand}"/>
+                <Button Content="清除已完成任务" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="20" IsEnabled="{Binding HaveFile}" Command="{Binding ClearFinishedFilesCommand}"/>
+                <Button Content="清除所有任务" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="20" IsEnabled="{Binding HaveFile}" Command="{Binding ClearFilesCommand}"/>
+            </StackPanel>
+        </Border>
+        <Border BorderBrush="Gray"
+                BorderThickness="2"
+                CornerRadius="3"
+                Padding="10" Margin="10"
+                DockPanel.Dock="Bottom"
+                Height="100">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <CheckBox Content="输出到源文件目录" IsChecked="{Binding ExportToSource}" Margin="10"/>
+                <Button Content="选择输出文件夹" Margin="10" IsEnabled="{Binding !ExportToSource}" Command="{Binding GetSaveFolderCommand}"/>
+                <Button Content="开始处理" Margin="10" IsEnabled="{Binding CanProcess}" Command="{Binding ProcessFilesCommand}"/>
+            </StackPanel>
+        </Border>
+        <Border BorderBrush="Gray"
+                BorderThickness="2"
+                CornerRadius="3"
+                Padding="10" Margin="10">
+            <ScrollViewer>
+                <ItemsControl ItemsSource="{Binding FileItems}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+							<Expander HorizontalAlignment="Stretch">
+								<Expander.Header>
+									<StackPanel Orientation="Horizontal">
+										<Rectangle Fill="{Binding StatusColor}" Width="20" Height="20"/>
+										<TextBlock Text="{Binding FilePath}" Margin="10"/>
+									</StackPanel>
+								</Expander.Header>
+								<Grid RowDefinitions="*,*" ColumnDefinitions="150,*,100,100">
+									<TextBlock Grid.Row="0" Grid.Column="0" Text ="任务状态"/>
+									<TextBlock Grid.Row="0" Grid.Column="1" Text ="{Binding Message}"/>
+									<Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" Content="重置任务" IsVisible="{Binding CanReset}"/>
+									<Button Grid.Row="0" Grid.Column="3" HorizontalAlignment="Right" Content="移除任务" IsEnabled="{Binding CanRemove}" Command="{Binding RemoveCommand}"/>
+									<TextBlock Grid.Row="1" Grid.Column="0" Text ="输出目录"/>
+									<TextBlock Grid.Row="1" Grid.Column="1" Text ="{Binding SavePath}"/>
+								</Grid>
+							</Expander>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+    </DockPanel>
+
+</Window>

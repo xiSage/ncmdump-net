@@ -1,0 +1,6 @@
+﻿<linker>
+	<assembly fullname="TagLibSharp">
+		<type fullname="TagLib.Flac.File"/>
+		<type fullname="TagLib.Mpeg.AudioFile"/>
+	</assembly>
+</linker>
