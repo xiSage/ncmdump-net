@@ -74,7 +74,7 @@ internal class Program
         {
             Console.WriteLine($"[Error] Reading '{filePath}' failed: {e.Message}");
             currentFile?.Dispose();
-            throw new Exception("failed to process file");
+            throw new Exception("Failed to read file");
         }
 
         try
@@ -87,7 +87,6 @@ internal class Program
             catch (Exception e)
             {
                 Console.WriteLine($"[Warning] Fixing metadata of '{filePath}' failed: {e.Message}");
-                throw new Exception("failed to process file");
             }
             Console.WriteLine($"[Done] Processed '{filePath}' to '{outputDir}'");
             return;
@@ -95,7 +94,7 @@ internal class Program
         catch (Exception e)
         {
             Console.WriteLine($"[Error] Processing '{filePath}' failed: {e.Message}");
-            throw new Exception("failed to process file");
+            throw new Exception("Failed to process file");
         }
         finally
         {
