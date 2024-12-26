@@ -246,6 +246,47 @@ namespace LibNCM
             _outputStream = output;
             _outputStream.Flush();
         }
+
+        public async Task DumpToFileAsync(string path, string name)
+        {
+            FileStream? output;
+            try
+            {
+                Directory.CreateDirectory(path);
+                output = File.Create(Path.Join(path, $"{name}.{Format.ToString().ToLower()}"));
+            }
+            catch (Exception)
+            {
+                throw new Exception($"create output file failed at \"{path}\"");
+            }
+            var buffer = new byte[0x8000];
+            var currentPosition = Position;
+            while (true)
+            {
+                int n;
+                try
+                {
+                    n = await ReadAsync(buffer);
+                    if (n == 0)
+                    {
+                        break;
+                    }
+                }
+                catch (Exception e)
+                {
+                    if (e is EndOfStreamException)
+                    {
+                        break;
+                    }
+                    throw;
+                }
+                var readData = buffer.AsMemory()[..n];
+                await output.WriteAsync(readData);
+            }
+            Position = currentPosition;
+            _outputStream = output;
+            await _outputStream.FlushAsync();
+        }
         // FixMetadata will fix the missing metadata for target music file, the source of the metadata comes from origin ncm file.
         // Since NeteaseCloudMusic version 3.0, the album cover image is no longer embedded in the ncm file. If the parameter is true, it means downloading the image from the NetEase server and embedding it into the target music file (network connection required)
         public void FixMetadata(bool fetchAlbumImageFromRemote)
