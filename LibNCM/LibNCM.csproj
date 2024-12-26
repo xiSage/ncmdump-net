@@ -36,7 +36,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="morelinq" />
-    <PackageReference Include="PublishAotCross" />
     <PackageReference Include="TagLibSharp" />
   </ItemGroup>
   <ItemGroup>
