@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>LibNCM</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -10,46 +9,38 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Platforms>AnyCPU</Platforms>
-	<TrimmerSingleWarn>false</TrimmerSingleWarn>
-	<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
-	<Authors>xiSage</Authors>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <Authors>xiSage</Authors>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DebugType>embedded</DebugType>
     <IsTrimmable>True</IsTrimmable>
     <IsAotCompatible>True</IsAotCompatible>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DebugType>embedded</DebugType>
     <IsTrimmable>True</IsTrimmable>
     <IsAotCompatible>True</IsAotCompatible>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Remove="Properties\PublishProfiles\**" />
     <EmbeddedResource Remove="Properties\PublishProfiles\**" />
     <None Remove="Properties\PublishProfiles\**" />
   </ItemGroup>
-
   <ItemGroup>
     <None Remove="Properties\launchSettings.json" />
   </ItemGroup>
-
   <ItemGroup>
-	<TrimmerRootDescriptor Include="Roots.xml" />
+    <TrimmerRootDescriptor Include="Roots.xml" />
   </ItemGroup>
-
   <ItemGroup>
-    <PackageReference Include="morelinq" Version="4.3.0" />
-    <PackageReference Include="PublishAotCross" Version="1.0.0" />
-    <PackageReference Include="TagLibSharp" Version="2.3.0" />
+    <PackageReference Include="morelinq" />
+    <PackageReference Include="PublishAotCross" />
+    <PackageReference Include="TagLibSharp" />
   </ItemGroup>
-
   <ItemGroup>
     <Folder Include="bin\" />
     <Folder Include="Properties\" />
   </ItemGroup>
-
 </Project>
