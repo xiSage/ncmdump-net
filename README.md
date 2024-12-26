@@ -2,7 +2,13 @@
 
 基于 https://github.com/taurusxin/ncmdump 和 https://git.taurusxin.com/taurusxin/ncmdump-go 的 C# 移植版。
 
-## 使用方法
+本仓库包含核心程序库以及基于核心库构建的控制台应用和GUI应用。
+
+## GUI应用
+
+![image](https://github.com/xiSage/ncmdump-net/blob/master/img/GUI.png)
+
+## 控制台应用
 
 处理单个或多个文件
 
