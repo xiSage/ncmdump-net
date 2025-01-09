@@ -21,11 +21,13 @@ jobs:
       with:
         dotnet-version: 9.0.x
     - run: sudo apt-get install clang zlib1g-dev
-    - run: cd ConsoleApp
-    - name: Publish ConsoleApp
+    - name: Publish
       run: dotnet publish -r linux-x64 -c Release
-    - name: Upload result
+    - name: Upload ConsoleApp
       uses: actions/upload-artifact@v4
       with:
-        name: published file
-        path: bin/Release/net9.0/linux-x64/publish/*
+        path: ConsoleApp/bin/Release/net9.0/linux-x64/publish/*
+    - name: Upload DesktopApp
+      uses: actions/upload-artifact@v4
+      with:
+        path: DesktopApp/bin/Release/net9.0/linux-x64/publish/*
