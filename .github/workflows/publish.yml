@@ -22,12 +22,8 @@ jobs:
         dotnet-version: 9.0.x
     - run: sudo apt-get install clang zlib1g-dev
     - run: cd ConsoleApp
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: Build ConsoleApp
-      run: dotnet build --no-restore
     - name: Publish ConsoleApp
-      run: dotnet publish -r linux-x64 -c Release --no-build
+      run: dotnet publish -r linux-x64 -c Release
     - name: Upload result
       uses: actions/upload-artifact@v4
       with:
