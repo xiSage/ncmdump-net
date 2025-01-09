@@ -1,0 +1,35 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: .NET
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+    - run: sudo apt-get install clang zlib1g-dev
+    - run: cd ConsoleApp
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build ConsoleApp
+      run: dotnet build --no-restore
+    - name: Publish ConsoleApp
+      run: dotnet publish -r linux-x64 -c Release --no-build
+    - name: Upload result
+      uses: actions/upload-artifact@v4
+      with:
+        name: published file
+        path: bin/Release/net9.0/linux-x64/native/ncmdump-net
