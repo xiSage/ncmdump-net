@@ -28,4 +28,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: published file
-        path: bin/Release/net9.0/linux-x64/native/ncmdump-net
+        path: bin/Release/net9.0/linux-x64/publish/*
