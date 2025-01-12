@@ -43,7 +43,7 @@ jobs:
         dotnet-version: 9.0.x
 
     - name: Publish any
-      run: dotnet publish -c Release -p:UseAppHost=false
+      run: dotnet publish -c Release -p:UseAppHost=false PublishAot=false
     - name: Upload ConsoleApp any
       uses: actions/upload-artifact@v4
       with:
