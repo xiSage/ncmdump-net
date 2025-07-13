@@ -6,7 +6,7 @@ namespace LibNCM
     {
         public string Album;
         public List<string> Artist;
-        public string Fromat;
+        public string Format;
         public string Name;
         public long Duration;
         public long Bitrate;
@@ -15,7 +15,7 @@ namespace LibNCM
         {
             Album = "";
             Artist = new(5);
-            Fromat = "";
+            Format = "";
             Name = "";
             Duration = 0;
             Bitrate = 0;
@@ -41,7 +41,7 @@ namespace LibNCM
 
                 if (json["bitrate"] is JsonValue bitrate) { Bitrate = bitrate.GetValue<int>(); }
                 if (json["duration"] is JsonValue duration) { Duration = duration.GetValue<int>(); }
-                if (json["format"] is JsonValue format) { Fromat = format.GetValue<string>(); }
+                if (json["format"] is JsonValue format) { Format = format.GetValue<string>(); }
             }
 
         }
