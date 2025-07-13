@@ -10,6 +10,7 @@ namespace LibNCM
         public string Name;
         public long Duration;
         public long Bitrate;
+        public string Description;
 
         public NeteaseCloudMusicMetadata(string meta)
         {
@@ -19,6 +20,7 @@ namespace LibNCM
             Name = "";
             Duration = 0;
             Bitrate = 0;
+            Description = "";
 
             if (meta == null || meta.Length == 0) { return; }
 

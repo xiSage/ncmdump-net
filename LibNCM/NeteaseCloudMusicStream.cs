@@ -1,4 +1,5 @@
 using MoreLinq.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography;
@@ -316,6 +317,7 @@ namespace LibNCM
             tfile.Tag.Title = Metadata?.Name;
             tfile.Tag.Performers = Metadata?.Artist.ToArray();
             tfile.Tag.Album = Metadata?.Album;
+            tfile.Tag.Description = Metadata?.Description;
 
             if (ImageData?.Length > 0)
             {
@@ -397,8 +399,10 @@ namespace LibNCM
                     modifyData[i] ^= 0x63;
                 }
 
+                var descriptionData = Encoding.UTF8.GetString(modifyData);
+
                 // escape `163 key(Don't modify):`
-                var swapModifyData = Encoding.UTF8.GetString(modifyData[22..]);
+                var swapModifyData = descriptionData[22..];
 
                 byte[]? modifyOutData;
                 try
@@ -426,7 +430,10 @@ namespace LibNCM
                 // extract the album pic url
                 AlbumPicUrl = GetAlbumPicUrl(metadataString);
 
-                Metadata = new NeteaseCloudMusicMetadata(metadataString);
+                Metadata = new NeteaseCloudMusicMetadata(metadataString)
+                {
+                    Description = descriptionData
+                };
             }
 
             // skip the 5 bytes gap
