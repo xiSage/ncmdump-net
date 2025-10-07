@@ -10,7 +10,7 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Platforms>AnyCPU</Platforms>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <Authors>xiSage</Authors>
     <RepositoryUrl>https://github.com/xiSage/ncmdump-net</RepositoryUrl>
     <AssemblyVersion>1.2.0</AssemblyVersion>
