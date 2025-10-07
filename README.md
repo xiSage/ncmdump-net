@@ -1,3 +1,5 @@
+[![NuGet Version](https://img.shields.io/nuget/v/xiSage.LibNCM)](https://www.nuget.org/packages/xiSage.LibNCM)
+
 # ncmdump-net
 
 基于 https://github.com/taurusxin/ncmdump 和 https://git.taurusxin.com/taurusxin/ncmdump-go 的 C# 移植版。
