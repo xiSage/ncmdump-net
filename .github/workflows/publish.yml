@@ -16,7 +16,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
     - run: sudo apt-get install clang zlib1g-dev
     - name: Publish
       run: dotnet publish -r linux-x64 -c Release
@@ -24,12 +24,12 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ncmdump-net-linux-x64
-        path: ConsoleApp/bin/Release/net9.0/linux-x64/publish/*
+        path: ConsoleApp/bin/Release/net10.0/linux-x64/publish/*
     - name: Upload DesktopApp
       uses: actions/upload-artifact@v4
       with:
         name: ncmdump-net-gui-linux-x64
-        path: DesktopApp/bin/Release/net9.0/linux-x64/publish/*
+        path: DesktopApp/bin/Release/net10.0/linux-x64/publish/*
         
   build-windows:
 
@@ -40,7 +40,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
 
     - name: Publish any
       run: dotnet publish -c Release /p:UseAppHost=false /p:PublishAot=false
@@ -48,12 +48,12 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ncmdump-net-win-any
-        path: ConsoleApp/bin/Release/net9.0/publish/*
+        path: ConsoleApp/bin/Release/net10.0/publish/*
     - name: Upload DesktopApp any
       uses: actions/upload-artifact@v4
       with:
         name: ncmdump-net-gui-win-any
-        path: DesktopApp/bin/Release/net9.0/publish/*
+        path: DesktopApp/bin/Release/net10.0/publish/*
 
 
     - name: Publish x64
@@ -62,12 +62,12 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ncmdump-net-win-x64
-        path: ConsoleApp/bin/Release/net9.0/win-x64/publish/*
+        path: ConsoleApp/bin/Release/net10.0/win-x64/publish/*
     - name: Upload DesktopApp x64
       uses: actions/upload-artifact@v4
       with:
         name: ncmdump-net-gui-win-x64
-        path: DesktopApp/bin/Release/net9.0/win-x64/publish/*
+        path: DesktopApp/bin/Release/net10.0/win-x64/publish/*
 
     - name: Publish x86
       run: dotnet publish -r win-x86 -c Release
@@ -75,12 +75,12 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ncmdump-net-win-x86
-        path: ConsoleApp/bin/Release/net9.0/win-x86/publish/*
+        path: ConsoleApp/bin/Release/net10.0/win-x86/publish/*
     - name: Upload DesktopApp x86
       uses: actions/upload-artifact@v4
       with:
         name: ncmdump-net-gui-win-x86
-        path: DesktopApp/bin/Release/net9.0/win-x86/publish/*
+        path: DesktopApp/bin/Release/net10.0/win-x86/publish/*
 
     - name: Publish arm64
       run: dotnet publish -r win-arm64 -c Release
@@ -88,11 +88,11 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ncmdump-net-win-arm64
-        path: ConsoleApp/bin/Release/net9.0/win-arm64/publish/*
+        path: ConsoleApp/bin/Release/net10.0/win-arm64/publish/*
     - name: Upload DesktopApp arm64
       uses: actions/upload-artifact@v4
       with:
         name: ncmdump-net-gui-win-arm64
-        path: DesktopApp/bin/Release/net9.0/win-arm64/publish/*
+        path: DesktopApp/bin/Release/net10.0/win-arm64/publish/*
 
   
