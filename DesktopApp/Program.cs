@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using System;
 
 namespace DesktopApp
@@ -17,6 +17,10 @@ namespace DesktopApp
             => AppBuilder.Configure<App>()
                 .UsePlatformDetect()
                 .WithInterFont()
-                .LogToTrace();
+                .LogToTrace()
+                #if DEBUG
+                .WithDeveloperTools()
+                #endif
+                ;
     }
 }

@@ -1,5 +1,4 @@
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -9,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Runtime;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DesktopApp.ViewModels
@@ -51,15 +50,7 @@ namespace DesktopApp.ViewModels
             foreach (var file in files)
             {
                 var filePath = file.Path.LocalPath;
-                string savePath;
-                if (ExportToSource || SaveFolder is null)
-                {
-                    savePath = Path.GetDirectoryName(filePath)!;
-                }
-                else
-                {
-                    savePath = SaveFolder;
-                }
+                string savePath = ExportToSource || SaveFolder is null ? Path.GetDirectoryName(filePath)! : SaveFolder;
                 AddFile(filePath, savePath);
             }
         }
@@ -77,20 +68,20 @@ namespace DesktopApp.ViewModels
             {
                 var folderPath = folder.Path.LocalPath;
                 var files = Directory.GetFiles(folderPath, "*.ncm", SearchOption.AllDirectories);
-                foreach (var filePath in files)
-                {
-                    string savePath;
-                    if (ExportToSource || SaveFolder is null)
-                    {
-                        savePath = Path.GetDirectoryName(filePath)!;
-                    }
-                    else
-                    {
-                        savePath = SaveFolder;
-                    }
-                    AddFile(filePath, savePath);
-                }
+                AddFiles(files);
             }
+        }
+
+        [RelayCommand]
+        public void DropFiles(IEnumerable<IStorageItem> files)
+        {
+            Console.WriteLine(files);
+
+            AddFiles(
+                files
+                .Select(file => file.Path.LocalPath)
+                .Where(file => file.EndsWith(".ncm", StringComparison.OrdinalIgnoreCase))
+            );
         }
         [RelayCommand]
         public async Task GetSaveFolder()
@@ -148,12 +139,12 @@ namespace DesktopApp.ViewModels
         private void AddFile(string filePath, string savePath)
         {
             if (AddedFiles.Contains(filePath)) return;
-            AddedFiles.Add(filePath);
+            _ = AddedFiles.Add(filePath);
             var fileItem = new FileItem(filePath, savePath);
             fileItem.RemoveEvent += () =>
             {
-                AddedFiles.Remove(filePath);
-                FileItems.Remove(fileItem);
+                _ = AddedFiles.Remove(filePath);
+                _ = FileItems.Remove(fileItem);
                 if (FileItems.Count == 0)
                 {
                     HaveFile = false;
@@ -161,6 +152,15 @@ namespace DesktopApp.ViewModels
             };
             FileItems.Add(fileItem);
             HaveFile = true;
+        }
+
+        private void AddFiles(IEnumerable<string> files)
+        {
+            foreach (var filePath in files)
+            {
+                string savePath = ExportToSource || SaveFolder is null ? Path.GetDirectoryName(filePath)! : SaveFolder;
+                AddFile(filePath, savePath);
+            }
         }
 
         private void UpdateSavePath()

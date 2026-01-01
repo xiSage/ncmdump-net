@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="ConsoleApp/ConsoleApp.csproj" />
+  <Project Path="DesktopApp/DesktopApp.csproj" />
+  <Project Path="LibNCM/LibNCM.csproj" />
+</Solution>

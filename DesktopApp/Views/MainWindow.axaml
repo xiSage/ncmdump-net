@@ -17,6 +17,10 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
+    <Interaction.Behaviors>
+	    <FilesDropBehavior Command="{Binding DropFilesCommand}"/>
+    </Interaction.Behaviors>
+
     <DockPanel LastChildFill="True">
         <Border BorderBrush="Gray"
                 BorderThickness="2"
@@ -26,7 +30,7 @@
                 Height="100">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" >
                 <Button Content="添加文件" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="20" Command="{Binding SelectFileCommand}"/>
-				<Button Content="添加文件夹" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="20" Command="{Binding SelectFolderCommand}"/>
+                <Button Content="添加文件夹" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="20" Command="{Binding SelectFolderCommand}"/>
                 <Button Content="清除已完成任务" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="20" IsEnabled="{Binding HaveFile}" Command="{Binding ClearFinishedFilesCommand}"/>
                 <Button Content="清除所有任务" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="20" IsEnabled="{Binding HaveFile}" Command="{Binding ClearFilesCommand}"/>
             </StackPanel>
@@ -51,27 +55,26 @@
                 <ItemsControl ItemsSource="{Binding FileItems}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-							<Expander HorizontalAlignment="Stretch">
-								<Expander.Header>
-									<StackPanel Orientation="Horizontal">
-										<Rectangle Fill="{Binding StatusColor}" Width="20" Height="20"/>
-										<TextBlock Text="{Binding FilePath}" Margin="10"/>
-									</StackPanel>
-								</Expander.Header>
-								<Grid RowDefinitions="*,*" ColumnDefinitions="150,*,100,100">
-									<TextBlock Grid.Row="0" Grid.Column="0" Text ="任务状态"/>
-									<TextBlock Grid.Row="0" Grid.Column="1" Text ="{Binding Message}"/>
-									<Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" Content="重置任务" IsVisible="{Binding CanReset}"/>
-									<Button Grid.Row="0" Grid.Column="3" HorizontalAlignment="Right" Content="移除任务" IsEnabled="{Binding CanRemove}" Command="{Binding RemoveCommand}"/>
-									<TextBlock Grid.Row="1" Grid.Column="0" Text ="输出目录"/>
-									<TextBlock Grid.Row="1" Grid.Column="1" Text ="{Binding SavePath}"/>
-								</Grid>
-							</Expander>
+                            <Expander HorizontalAlignment="Stretch">
+                                <Expander.Header>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Rectangle Fill="{Binding StatusColor}" Width="20" Height="20"/>
+                                        <TextBlock Text="{Binding FilePath}" Margin="10"/>
+                                    </StackPanel>
+                                </Expander.Header>
+                                <Grid RowDefinitions="*,*" ColumnDefinitions="150,*,100,100">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text ="任务状态"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text ="{Binding Message}"/>
+                                    <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" Content="重置任务" IsVisible="{Binding CanReset}"/>
+                                    <Button Grid.Row="0" Grid.Column="3" HorizontalAlignment="Right" Content="移除任务" IsEnabled="{Binding CanRemove}" Command="{Binding RemoveCommand}"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text ="输出目录"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text ="{Binding SavePath}"/>
+                                </Grid>
+                            </Expander>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
         </Border>
     </DockPanel>
-
 </Window>

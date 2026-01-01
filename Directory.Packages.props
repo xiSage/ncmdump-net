@@ -5,20 +5,15 @@
     <NoWarn>$(NoWarn);NU1507</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Avalonia" Version="11.3.2" />
-    <PackageVersion Include="Avalonia.Desktop" Version="11.3.2" />
-    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.2" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.2" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.2" />
-    <PackageVersion Include="Blazorise.Bootstrap5" Version="1.7.1" />
-    <PackageVersion Include="Blazorise.Icons.FontAwesome" Version="1.7.1" />
-    <PackageVersion Include="Blazorise.Video" Version="1.7.1" />
+    <PackageVersion Include="Avalonia" Version="11.3.10" />
+    <PackageVersion Include="Avalonia.Desktop" Version="11.3.10" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.10" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.10" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.10" />
+    <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.1.1" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageVersion Include="ConsoleAppFramework" Version="5.5.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.0" />
-    <PackageVersion Include="morelinq" Version="4.4.0" />
-    <PackageVersion Include="PublishAotCross" Version="1.0.0" />
+    <PackageVersion Include="ConsoleAppFramework" Version="5.7.13" />
     <PackageVersion Include="TagLibSharp" Version="2.3.0" />
+    <PackageVersion Include="Xaml.Behaviors.Interactions.DragAndDrop" Version="11.3.9" />
   </ItemGroup>
 </Project>
