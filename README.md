@@ -1,4 +1,5 @@
 [![NuGet Version](https://img.shields.io/nuget/v/xiSage.LibNCM)](https://www.nuget.org/packages/xiSage.LibNCM)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/xiSage/ncmdump-net)
 
 # ncmdump-net
 
