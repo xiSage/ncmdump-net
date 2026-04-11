@@ -1,6 +1,6 @@
 {
-  "name": "WebApp",
-  "short_name": "WebApp",
+  "name": "NCMDump WebApp",
+  "short_name": "NCMDump",
   "id": "./",
   "start_url": "./",
   "display": "standalone",
