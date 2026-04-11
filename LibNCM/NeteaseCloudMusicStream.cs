@@ -154,14 +154,7 @@ namespace LibNCM
         public void DumpToMemory()
         {
             var buffer = new byte[0x8000];
-            _decryptedData = [];
-            /*
-            if (targetDir != "")
-            {
-                // change save dir
-                DumpFilePath = Path.Join(targetDir, Path.GetFileName(DumpFilePath));
-            }
-            */
+            var decrypted = new List<byte>();
             var currentPosition = Position;
             while (true)
             {
@@ -180,25 +173,9 @@ namespace LibNCM
                 }
 
                 var readData = buffer.AsSpan()[..n];
-                _decryptedData.AddRange(readData);
-                /*
-                try
-                {
-                    var path = Path.GetDirectoryName(DumpFilePath);
-                    if (path is not null)
-                    {
-                        Directory.CreateDirectory(path);
-                    }
-                    outputStream = File.Create(DumpFilePath);
-                }
-                catch (Exception)
-                {
-                    throw new Exception($"create output file failed at \"{DumpFilePath}\"");
-                }
-                */
-
-                //outputStream!.Write(buffer, 0, n);
+                decrypted.AddRange(readData);
             }
+            _decryptedData = decrypted;
             Position = currentPosition;
         }
 
