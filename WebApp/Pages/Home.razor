@@ -1,0 +1,244 @@
+@page "/"
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject NcmDecryptService DecryptService
+
+<PageTitle>ncmdump-net</PageTitle>
+
+<div class="app-container">
+    <div class="drop-zone" @onclick="TriggerFileInput">
+        <div class="drop-zone-content">
+            <div class="drop-zone-icon">📁</div>
+            <div class="drop-zone-text">拖拽 .ncm 文件到此处</div>
+            <div class="drop-zone-subtext">或点击选择文件</div>
+        </div>
+    </div>
+
+    <InputFile OnChange="OnFileSelected" multiple accept=".ncm" style="display:none" />
+
+    @if (fileItems.Count > 0)
+    {
+        <div class="file-list">
+            @foreach (var item in fileItems)
+            {
+                <div class="file-item @GetStatusClass(item)">
+                    <div class="file-item-header">
+                        <span class="status-dot @GetStatusDotClass(item)"></span>
+                        <span class="file-name">@item.FileName</span>
+                        @if (item.Status == NcmFileItem.NcmStatus.Finished && item.Metadata is { } meta)
+                        {
+                            <span class="file-meta">@meta.Name - @string.Join(", ", meta.Artist)</span>
+                        }
+                    </div>
+                    <div class="file-item-actions">
+                        <span class="file-message @GetMessageClass(item)">@item.Message</span>
+                        <div class="file-buttons">
+                            @if (item.Status == NcmFileItem.NcmStatus.Finished)
+                            {
+                                <button class="btn btn-download" @onclick="() => DownloadFile(item)">下载</button>
+                            }
+                            @if (item.Status == NcmFileItem.NcmStatus.Failed)
+                            {
+                                <button class="btn btn-retry" @onclick="() => ResetFile(item)">重试</button>
+                            }
+                            @if (item.Status != NcmFileItem.NcmStatus.Processing)
+                            {
+                                <button class="btn btn-remove" @onclick="() => RemoveFile(item)">移除</button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="action-bar">
+            <button class="btn btn-primary" disabled="@(!canProcess)" @onclick="ProcessFiles">
+                @(canProcess ? "开始处理" : "处理中...")
+            </button>
+            <div class="action-bar-right">
+                <button class="btn" disabled="@(!hasFinishedFiles)" @onclick="ClearFinishedFiles">清除已完成</button>
+                <button class="btn" disabled="@(!hasFiles)" @onclick="ClearAllFiles">清除全部</button>
+            </div>
+        </div>
+    }
+</div>
+
+@if (isDragOver)
+{
+    <div class="drag-overlay">
+        <div class="drag-overlay-content">
+            <div class="drag-overlay-icon">📥</div>
+            <div class="drag-overlay-text">释放以添加 .ncm 文件</div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<NcmFileItem> fileItems = new();
+    private bool canProcess = true;
+    private bool isDragOver = false;
+    private DotNetObjectReference<Home>? dotNetRef;
+
+    private bool hasFiles => fileItems.Count > 0;
+    private bool hasFinishedFiles => fileItems.Any(f => f.Status == NcmFileItem.NcmStatus.Finished);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("ncmApp.init", dotNetRef);
+        }
+    }
+
+    [JSInvokable]
+    public void SetDragOver(bool value)
+    {
+        isDragOver = value;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public async Task AddDroppedFile(string fileName, byte[] data)
+    {
+        if (fileItems.Any(f => f.FileName == fileName)) return;
+        fileItems.Add(new NcmFileItem(fileName, data));
+        StateHasChanged();
+    }
+
+    private async Task TriggerFileInput()
+    {
+        await JS.InvokeVoidAsync("eval", "document.querySelector('input[type=file]').click()");
+    }
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        foreach (var file in e.GetMultipleFiles())
+        {
+            if (fileItems.Any(f => f.FileName == file.Name)) continue;
+            if (!file.Name.EndsWith(".ncm", StringComparison.OrdinalIgnoreCase)) continue;
+
+            try
+            {
+                var ms = new MemoryStream();
+                await file.OpenReadStream(200 * 1024 * 1024).CopyToAsync(ms);
+                fileItems.Add(new NcmFileItem(file.Name, ms.ToArray()));
+            }
+            catch (Exception ex)
+            {
+                var item = new NcmFileItem(file.Name);
+                item.SetFailed($"读取文件失败: {ex.Message}");
+                fileItems.Add(item);
+            }
+        }
+        StateHasChanged();
+    }
+
+    private async Task ProcessFiles()
+    {
+        if (!canProcess) return;
+        canProcess = false;
+        StateHasChanged();
+
+        var pendingItems = fileItems.Where(f => f.Status == NcmFileItem.NcmStatus.Waiting || f.Status == NcmFileItem.NcmStatus.Failed).ToList();
+
+        foreach (var item in pendingItems)
+        {
+            if (item.RawData == null)
+            {
+                item.SetFailed("文件数据不可用，请重新添加");
+                StateHasChanged();
+                continue;
+            }
+
+            item.SetProcessing();
+            StateHasChanged();
+            await Task.Delay(1);
+
+            var result = DecryptService.Decrypt(item.RawData, item.FileName);
+
+            if (result.Success)
+            {
+                item.SetFinished(result.Data!, result.FileName!, result.Metadata);
+            }
+            else
+            {
+                item.SetFailed(result.ErrorMessage ?? "未知错误");
+            }
+            StateHasChanged();
+            await Task.Delay(1);
+        }
+
+        canProcess = true;
+        StateHasChanged();
+    }
+
+    private async Task DownloadFile(NcmFileItem item)
+    {
+        if (item.Data == null) return;
+        using var stream = new MemoryStream(item.Data);
+        var streamRef = new DotNetStreamReference(stream);
+        await JS.InvokeVoidAsync("ncmApp.downloadFileFromStream", item.OutputFileName, streamRef);
+    }
+
+    private void RemoveFile(NcmFileItem item)
+    {
+        fileItems.Remove(item);
+        StateHasChanged();
+    }
+
+    private void ResetFile(NcmFileItem item)
+    {
+        item.Reset();
+        StateHasChanged();
+    }
+
+    private void ClearFinishedFiles()
+    {
+        fileItems.RemoveAll(f => f.Status == NcmFileItem.NcmStatus.Finished);
+        StateHasChanged();
+    }
+
+    private void ClearAllFiles()
+    {
+        fileItems.Clear();
+        StateHasChanged();
+    }
+
+    private string GetStatusClass(NcmFileItem item) => item.Status switch
+    {
+        NcmFileItem.NcmStatus.Processing => "status-processing",
+        NcmFileItem.NcmStatus.Finished => "status-finished",
+        NcmFileItem.NcmStatus.Failed => "status-failed",
+        _ => ""
+    };
+
+    private string GetStatusDotClass(NcmFileItem item) => item.Status switch
+    {
+        NcmFileItem.NcmStatus.Waiting => "dot-waiting",
+        NcmFileItem.NcmStatus.Processing => "dot-processing",
+        NcmFileItem.NcmStatus.Finished => "dot-finished",
+        NcmFileItem.NcmStatus.Failed => "dot-failed",
+        _ => ""
+    };
+
+    private string GetMessageClass(NcmFileItem item) => item.Status switch
+    {
+        NcmFileItem.NcmStatus.Failed => "message-error",
+        NcmFileItem.NcmStatus.Finished => "message-success",
+        _ => ""
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        if (dotNetRef != null)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("ncmApp.dispose");
+            }
+            catch { }
+            dotNetRef.Dispose();
+        }
+    }
+}
