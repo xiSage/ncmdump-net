@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
 
@@ -513,18 +512,7 @@ namespace LibNCM
 
         private static byte[] AesEcbDecrypt(byte[] key, byte[] src)
         {
-            using var aes = Aes.Create();
-            aes.Mode = CipherMode.ECB; // 设置 AES 模式为 ECB
-            aes.Key = key; // 设置密钥
-            aes.Padding = PaddingMode.PKCS7;
-
-            using var decryptor = aes.CreateDecryptor();
-            using var memoryStream = new MemoryStream(src);
-            using var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read);
-            using var resultStream = new MemoryStream();
-            cryptoStream.CopyTo(resultStream); // 解密数据
-            byte[] decryptedData = resultStream.ToArray();
-            return decryptedData; // 返回解密后的数据
+            return AesEcbPure.Decrypt(key, src);
         }
 
         public override void Flush()
