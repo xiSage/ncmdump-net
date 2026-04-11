@@ -5,7 +5,11 @@
 
 基于 https://github.com/taurusxin/ncmdump 和 https://git.taurusxin.com/taurusxin/ncmdump-go 的 C# 移植版。
 
-本仓库包含核心程序库以及基于核心库构建的控制台应用和GUI应用。
+本仓库包含核心程序库以及基于核心库构建的控制台应用、GUI应用和Web应用。
+
+## Web应用
+
+https://xisage.com/ncmdump-net/
 
 ## GUI应用
 
