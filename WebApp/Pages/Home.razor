@@ -153,9 +153,8 @@
 
             item.SetProcessing();
             StateHasChanged();
-            await Task.Delay(1);
 
-            var result = NcmDecryptService.Decrypt(item.RawData, item.FileName);
+            var result = await NcmDecryptService.DecryptAsync(item.RawData, item.FileName);
 
             if (result.Success)
             {
@@ -166,7 +165,6 @@
                 item.SetFailed(result.ErrorMessage ?? "未知错误");
             }
             StateHasChanged();
-            await Task.Delay(1);
         }
 
         canProcess = true;

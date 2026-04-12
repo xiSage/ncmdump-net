@@ -5,7 +5,9 @@ namespace WebApp;
 
 public class NcmDecryptService
 {
-    public static NcmDecryptResult Decrypt(byte[] ncmData, string fileName)
+    private const int YieldInterval = 0x80000;
+
+    public static async Task<NcmDecryptResult> DecryptAsync(byte[] ncmData, string fileName)
     {
         try
         {
@@ -13,8 +15,9 @@ public class NcmDecryptService
             NeteaseCloudMusicStream.NcmFormat format;
             byte[]? imageData;
 
-            var decryptedList = new List<byte>();
+            var decryptedStream = new MemoryStream(ncmData.Length);
             var buffer = new byte[0x8000];
+            var totalRead = 0;
 
             using (var ms = new MemoryStream(ncmData))
             using (var ncm = new NeteaseCloudMusicStream(ms))
@@ -32,7 +35,14 @@ public class NcmDecryptService
                         break;
                     }
 
-                    decryptedList.AddRange(buffer.AsSpan()[..n]);
+                    decryptedStream.Write(buffer, 0, n);
+                    totalRead += n;
+
+                    if (totalRead >= YieldInterval)
+                    {
+                        totalRead = 0;
+                        await Task.Yield();
+                    }
                 }
 
                 metadata = ncm.Metadata;
@@ -40,7 +50,7 @@ public class NcmDecryptService
                 imageData = ncm.ImageData;
             }
 
-            var decryptedBytes = decryptedList.ToArray();
+            var decryptedBytes = decryptedStream.ToArray();
             byte[] resultBytes = ApplyMetadata(metadata, format, imageData, decryptedBytes);
 
             var outputFileName = Path.GetFileNameWithoutExtension(fileName) + "." + format.ToString().ToLower();
