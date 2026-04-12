@@ -5,7 +5,7 @@ namespace WebApp;
 
 public class NcmDecryptService
 {
-    public NcmDecryptResult Decrypt(byte[] ncmData, string fileName)
+    public static NcmDecryptResult Decrypt(byte[] ncmData, string fileName)
     {
         try
         {
@@ -64,7 +64,7 @@ public class NcmDecryptService
         }
     }
 
-    private byte[] ApplyMetadata(NeteaseCloudMusicMetadata? metadata, NeteaseCloudMusicStream.NcmFormat format, byte[]? imageData, byte[] decryptedBytes)
+    private static byte[] ApplyMetadata(NeteaseCloudMusicMetadata? metadata, NeteaseCloudMusicStream.NcmFormat format, byte[]? imageData, byte[] decryptedBytes)
     {
         if (metadata is null && imageData is null) return decryptedBytes;
 
@@ -82,13 +82,13 @@ public class NcmDecryptService
             if (metadata is { } m)
             {
                 tagFile.Tag.Title = m.Name;
-                tagFile.Tag.Performers = m.Artist.ToArray();
+                tagFile.Tag.Performers = [.. m.Artist];
                 tagFile.Tag.Album = m.Album;
             }
 
             if (imageData?.Length > 0)
             {
-                tagFile.Tag.Pictures = new[] { new TagLib.Picture(imageData) };
+                tagFile.Tag.Pictures = [new TagLib.Picture(imageData)];
             }
 
             tagFile.Save();
@@ -101,19 +101,12 @@ public class NcmDecryptService
         }
     }
 
-    private class MemoryStreamFileAbstraction : TagLib.File.IFileAbstraction
+    private class MemoryStreamFileAbstraction(string name, MemoryStream stream) : TagLib.File.IFileAbstraction
     {
-        private readonly MemoryStream _stream;
 
-        public string Name { get; }
-        public Stream ReadStream => _stream;
-        public Stream WriteStream => _stream;
-
-        public MemoryStreamFileAbstraction(string name, MemoryStream stream)
-        {
-            Name = name;
-            _stream = stream;
-        }
+        public string Name { get; } = name;
+        public Stream ReadStream => stream;
+        public Stream WriteStream => stream;
 
         public void CloseStream(Stream stream) { }
     }

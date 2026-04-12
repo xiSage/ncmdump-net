@@ -2,7 +2,7 @@ namespace LibNCM;
 
 internal static class AesEcbPure
 {
-    private static readonly byte[] SBox = {
+    private static readonly byte[] SBox = [
         0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
         0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
         0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,
@@ -19,9 +19,9 @@ internal static class AesEcbPure
         0x70, 0x3e, 0xb5, 0x66, 0x48, 0x03, 0xf6, 0x0e, 0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e,
         0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
         0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
-    };
+    ];
 
-    private static readonly byte[] InvSBox = {
+    private static readonly byte[] InvSBox = [
         0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
         0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb,
         0x54, 0x7b, 0x94, 0x32, 0xa6, 0xc2, 0x23, 0x3d, 0xee, 0x4c, 0x95, 0x0b, 0x42, 0xfa, 0xc3, 0x4e,
@@ -38,30 +38,32 @@ internal static class AesEcbPure
         0x60, 0x51, 0x7f, 0xa9, 0x19, 0xb5, 0x4a, 0x0d, 0x2d, 0xe5, 0x7a, 0x9f, 0x93, 0xc9, 0x9c, 0xef,
         0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0, 0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61,
         0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d
-    };
+    ];
 
-    private static readonly byte[] Rcon = {
+    private static readonly byte[] Rcon = [
         0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
-    };
+    ];
 
     public static byte[] Decrypt(byte[] key, byte[] src)
     {
+        if (key.Length != 16)
+            throw new ArgumentException("AES-128-ECB requires a 16-byte key", nameof(key));
         if (src.Length == 0 || src.Length % 16 != 0)
-            throw new ArgumentException("Invalid ciphertext length for AES-ECB");
+            throw new ArgumentException("Invalid ciphertext length for AES-ECB", nameof(src));
 
         var roundKeys = KeyExpansion(key);
 
         var result = new byte[src.Length];
+        var block = new byte[16];
         for (var i = 0; i < src.Length; i += 16)
         {
-            var block = new byte[16];
             Array.Copy(src, i, block, 0, 16);
             var decrypted = DecryptBlock(block, roundKeys);
             Array.Copy(decrypted, 0, result, i, 16);
         }
 
-        var padLen = result[result.Length - 1];
-        if (padLen > 0 && padLen <= 16)
+        var padLen = result[^1];
+        if (padLen is > 0 and <= 16)
         {
             var valid = true;
             for (var i = result.Length - padLen; i < result.Length; i++)
@@ -115,7 +117,7 @@ internal static class AesEcbPure
         {
             roundKeys[r] = new byte[16];
             for (var i = 0; i < 4; i++)
-                Array.Copy(w[r * 4 + i], 0, roundKeys[r], i * 4, 4);
+                Array.Copy(w[(r * 4) + i], 0, roundKeys[r], i * 4, 4);
         }
 
         return roundKeys;
@@ -127,7 +129,7 @@ internal static class AesEcbPure
 
         for (var c = 0; c < 4; c++)
             for (var r = 0; r < 4; r++)
-                state[r, c] = block[c * 4 + r];
+                state[r, c] = block[(c * 4) + r];
 
         AddRoundKey(state, roundKeys[10]);
 
@@ -146,7 +148,7 @@ internal static class AesEcbPure
         var result = new byte[16];
         for (var c = 0; c < 4; c++)
             for (var r = 0; r < 4; r++)
-                result[c * 4 + r] = state[r, c];
+                result[(c * 4) + r] = state[r, c];
 
         return result;
     }
@@ -155,7 +157,7 @@ internal static class AesEcbPure
     {
         for (var c = 0; c < 4; c++)
             for (var r = 0; r < 4; r++)
-                state[r, c] ^= roundKey[c * 4 + r];
+                state[r, c] ^= roundKey[(c * 4) + r];
     }
 
     private static void InvSubBytes(byte[,] state)

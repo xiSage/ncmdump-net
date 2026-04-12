@@ -155,7 +155,7 @@
             StateHasChanged();
             await Task.Delay(1);
 
-            var result = DecryptService.Decrypt(item.RawData, item.FileName);
+            var result = NcmDecryptService.Decrypt(item.RawData, item.FileName);
 
             if (result.Success)
             {

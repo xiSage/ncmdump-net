@@ -2,26 +2,17 @@ using LibNCM;
 
 namespace WebApp;
 
-public class NcmFileItem
+public class NcmFileItem(string fileName, byte[]? rawData = null)
 {
-    public string FileName { get; }
-    public string OutputFileName { get; private set; }
-    public NcmStatus Status { get; private set; }
-    public string Message { get; private set; }
+    public string FileName { get; } = fileName;
+    public string OutputFileName { get; private set; } = fileName;
+    public NcmStatus Status { get; private set; } = NcmStatus.Waiting;
+    public string Message { get; private set; } = "等待处理";
     public byte[]? Data { get; private set; }
-    public byte[]? RawData { get; private set; }
+    public byte[]? RawData { get; private set; } = rawData;
     public NeteaseCloudMusicMetadata? Metadata { get; private set; }
 
     public enum NcmStatus { Waiting, Processing, Finished, Failed }
-
-    public NcmFileItem(string fileName, byte[]? rawData = null)
-    {
-        FileName = fileName;
-        OutputFileName = fileName;
-        Status = NcmStatus.Waiting;
-        Message = "等待处理";
-        RawData = rawData;
-    }
 
     public void SetProcessing()
     {
