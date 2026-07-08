@@ -3,12 +3,12 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using LibNCM;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DesktopApp.ViewModels
@@ -16,16 +16,23 @@ namespace DesktopApp.ViewModels
     public partial class MainWindowViewModel : ViewModelBase
     {
         [ObservableProperty]
-        private bool _exportToSource = true;
+        public partial bool ExportToSource { get; set; } = true;
+
         [ObservableProperty]
-        private bool _keepFolderStructure = false;
+        public partial bool HaveFile { get; set; } = false;
+
         [ObservableProperty]
-        private bool _haveFile = false;
+        public partial bool CanProcess { get; set; } = true;
+
         [ObservableProperty]
-        private bool _canProcess = true;
-        public ObservableCollection<FileItem> FileItems { get; set; } = [];
-        public HashSet<string> AddedFiles { get; set; } = [];
-        public string? SaveFolder { get; set; } = null;
+        public partial string? SaveFolder { get; set; } = null;
+
+        public ObservableCollection<FileItem> FileItems { get; } = [];
+        public HashSet<string> AddedFiles { get; } = [];
+
+        private CancellationTokenSource? _processCts;
+
+        public bool CanStartProcessing => CanProcess && HaveFile;
 
         public static FilePickerFileType NcmFileType { get; } = new("网易云音乐ncm文件")
         {
@@ -33,9 +40,6 @@ namespace DesktopApp.ViewModels
             MimeTypes = null
         };
 
-        public MainWindowViewModel()
-        {
-        }
         [RelayCommand]
         public async Task SelectFile()
         {
@@ -54,6 +58,7 @@ namespace DesktopApp.ViewModels
                 AddFile(filePath, savePath);
             }
         }
+
         [RelayCommand]
         public async Task SelectFolder()
         {
@@ -67,7 +72,16 @@ namespace DesktopApp.ViewModels
             foreach (var folder in folders)
             {
                 var folderPath = folder.Path.LocalPath;
-                var files = Directory.GetFiles(folderPath, "*.ncm", SearchOption.AllDirectories);
+                string[] files;
+                try
+                {
+                    files = Directory.GetFiles(folderPath, "*.ncm", SearchOption.AllDirectories);
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine($"Failed to scan folder \"{folderPath}\": {e.Message}");
+                    continue;
+                }
                 AddFiles(files);
             }
         }
@@ -75,14 +89,13 @@ namespace DesktopApp.ViewModels
         [RelayCommand]
         public void DropFiles(IEnumerable<IStorageItem> files)
         {
-            Console.WriteLine(files);
-
             AddFiles(
                 files
                 .Select(file => file.Path.LocalPath)
                 .Where(file => file.EndsWith(".ncm", StringComparison.OrdinalIgnoreCase))
             );
         }
+
         [RelayCommand]
         public async Task GetSaveFolder()
         {
@@ -99,6 +112,7 @@ namespace DesktopApp.ViewModels
             }
             UpdateSavePath();
         }
+
         [RelayCommand]
         public void ClearFiles()
         {
@@ -106,6 +120,7 @@ namespace DesktopApp.ViewModels
             AddedFiles.Clear();
             HaveFile = false;
         }
+
         [RelayCommand]
         public void ClearFinishedFiles()
         {
@@ -124,27 +139,57 @@ namespace DesktopApp.ViewModels
                 HaveFile = false;
             }
         }
+
         [RelayCommand]
         public async Task ProcessFiles()
         {
-            if (!CanProcess) return;
+            if (!CanProcess || _processCts is not null) return;
             CanProcess = false;
-            foreach (var fileItem in FileItems)
+            _processCts = new CancellationTokenSource();
+            var token = _processCts.Token;
+            using var semaphore = new SemaphoreSlim(4);
+            try
             {
-                await fileItem.Process();
+                await Task.WhenAll(FileItems.Select(async item =>
+                {
+                    await semaphore.WaitAsync(token);
+                    try
+                    {
+                        await item.Process(token);
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                }));
             }
-            CanProcess = true;
+            catch (OperationCanceledException)
+            {
+                // User cancelled
+            }
+            finally
+            {
+                _processCts.Dispose();
+                _processCts = null;
+                CanProcess = true;
+            }
+        }
+
+        [RelayCommand]
+        public void StopProcessing()
+        {
+            _processCts?.Cancel();
         }
 
         private void AddFile(string filePath, string savePath)
         {
             if (AddedFiles.Contains(filePath)) return;
-            _ = AddedFiles.Add(filePath);
+            AddedFiles.Add(filePath);
             var fileItem = new FileItem(filePath, savePath);
-            fileItem.RemoveEvent += () =>
+            fileItem.RemoveCallback = () =>
             {
-                _ = AddedFiles.Remove(filePath);
-                _ = FileItems.Remove(fileItem);
+                AddedFiles.Remove(filePath);
+                FileItems.Remove(fileItem);
                 if (FileItems.Count == 0)
                 {
                     HaveFile = false;
@@ -180,85 +225,20 @@ namespace DesktopApp.ViewModels
                 }
             }
         }
+
         partial void OnExportToSourceChanged(bool oldValue, bool newValue)
         {
             UpdateSavePath();
         }
-    }
-    public partial class FileItem : ObservableObject
-    {
-        public delegate void RemoveEventHandler();
-        public event RemoveEventHandler? RemoveEvent;
 
-        [ObservableProperty]
-        private string _filePath;
-        [ObservableProperty]
-        private string _savePath;
-        public enum StatusEnum { Waiting, Processing, Finished, Failed }
-        [ObservableProperty]
-        private StatusEnum _status = StatusEnum.Waiting;
-        [ObservableProperty]
-        private string _message = "等待处理";
-        [ObservableProperty]
-        private string _statusColor = "Transparent";
-        [ObservableProperty]
-        private bool _canRemove = true;
-        [ObservableProperty]
-        private bool _canReset = false;
-
-        public FileItem(string filePath, string savePath)
+        partial void OnCanProcessChanged(bool oldValue, bool newValue)
         {
-            FilePath = filePath;
-            SavePath = savePath;
+            OnPropertyChanged(nameof(CanStartProcessing));
         }
 
-        [RelayCommand]
-        public void Remove()
+        partial void OnHaveFileChanged(bool oldValue, bool newValue)
         {
-            RemoveEvent?.Invoke();
-        }
-
-        public async Task Process()
-        {
-            if (Status != StatusEnum.Waiting) return;
-            Status = StatusEnum.Processing;
-            Message = "正在处理";
-            StatusColor = "Yellow";
-            CanRemove = false;
-            CanReset = false;
-            NeteaseCloudMusicStream? ncm = null;
-            try
-            {
-                ncm = new NeteaseCloudMusicStream(FilePath);
-                await ncm.DumpToFileAsync(SavePath, Path.GetFileNameWithoutExtension(FilePath));
-                ncm.FixMetadata(true);
-                Message = "处理完成";
-                StatusColor = "Green";
-                CanRemove = true;
-                CanReset = false;
-                Status = StatusEnum.Finished;
-            }
-            catch (Exception e)
-            {
-                Message = e.Message;
-                StatusColor = "Red";
-                CanRemove = true;
-                CanReset = true;
-                Status = StatusEnum.Failed;
-            }
-            finally
-            {
-                ncm?.Dispose();
-            }
-        }
-
-        public void Reset()
-        {
-            Message = "等待处理";
-            StatusColor = "Transparent";
-            CanRemove = true;
-            CanReset = false;
-            Status = StatusEnum.Waiting;
+            OnPropertyChanged(nameof(CanStartProcessing));
         }
     }
 }

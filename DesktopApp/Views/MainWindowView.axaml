@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-        x:Class="DesktopApp.Views.MainWindow"
+        x:Class="DesktopApp.Views.MainWindowView"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="ncmdump"
@@ -44,7 +44,8 @@
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                 <CheckBox Content="输出到源文件目录" IsChecked="{Binding ExportToSource}" Margin="10"/>
                 <Button Content="选择输出文件夹" Margin="10" IsEnabled="{Binding !ExportToSource}" Command="{Binding GetSaveFolderCommand}"/>
-                <Button Content="开始处理" Margin="10" IsEnabled="{Binding CanProcess}" Command="{Binding ProcessFilesCommand}"/>
+                <Button Content="开始处理" Margin="10" IsEnabled="{Binding CanStartProcessing}" Command="{Binding ProcessFilesCommand}"/>
+                <Button Content="停止处理" Margin="10" IsEnabled="{Binding !CanProcess}" Command="{Binding StopProcessingCommand}"/>
             </StackPanel>
         </Border>
         <Border BorderBrush="Gray"
@@ -54,7 +55,7 @@
             <ScrollViewer>
                 <ItemsControl ItemsSource="{Binding FileItems}">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate x:DataType="vm:FileItem">
                             <Expander HorizontalAlignment="Stretch">
                                 <Expander.Header>
                                     <StackPanel Orientation="Horizontal">
@@ -65,7 +66,7 @@
                                 <Grid RowDefinitions="*,*" ColumnDefinitions="150,*,100,100">
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text ="任务状态"/>
                                     <TextBlock Grid.Row="0" Grid.Column="1" Text ="{Binding Message}"/>
-                                    <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" Content="重置任务" IsVisible="{Binding CanReset}"/>
+                                    <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" Content="重置任务" IsVisible="{Binding CanReset}" Command="{Binding ResetCommand}"/>
                                     <Button Grid.Row="0" Grid.Column="3" HorizontalAlignment="Right" Content="移除任务" IsEnabled="{Binding CanRemove}" Command="{Binding RemoveCommand}"/>
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text ="输出目录"/>
                                     <TextBlock Grid.Row="1" Grid.Column="1" Text ="{Binding SavePath}"/>

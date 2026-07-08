@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="ConsoleApp/ConsoleApp.csproj" />
   <Project Path="DesktopApp/DesktopApp.csproj" />
+  <Project Path="DesktopApp.SourceGen/DesktopApp.SourceGen.csproj" />
   <Project Path="LibNCM/LibNCM.csproj" />
   <Project Path="WebApp/WebApp.csproj" Id="b4b330a6-4205-4207-97fa-3a5158a29651" />
 </Solution>

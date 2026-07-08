@@ -1,49 +1,51 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace LibNCM;
 
 public class NeteaseCloudMusicMetadata
 {
-    public string Album;
-    public List<string> Artist;
-    public string Format;
-    public string Name;
-    public long Duration;
-    public long Bitrate;
-    public string Description;
+    public string Album { get; set; } = "";
+    public List<string> Artist { get; } = new(5);
+    public string Format { get; set; } = "";
+    public string Name { get; set; } = "";
+    public long Duration { get; set; }
+    public long Bitrate { get; set; }
+    public string Description { get; set; } = "";
 
     public NeteaseCloudMusicMetadata(string meta)
     {
-        Album = "";
-        Artist = new(5);
-        Format = "";
-        Name = "";
-        Duration = 0;
-        Bitrate = 0;
-        Description = "";
-
         if (string.IsNullOrEmpty(meta)) return;
 
-        if (JsonNode.Parse(meta) is JsonObject json)
+        JsonObject? json;
+        try
         {
-            if (json["musicName"] is JsonValue musicName) { Name = musicName.GetValue<string>(); }
-            if (json["album"] is JsonValue album) { Album = album.GetValue<string>(); }
+            json = JsonNode.Parse(meta) as JsonObject;
+        }
+        catch (JsonException e)
+        {
+            throw new NcmMetadataException("Failed to parse metadata JSON", e);
+        }
 
-            var artists = json["artist"]?.AsArray();
-            if (artists is { Count: > 0 })
+        if (json is null) return;
+
+        if (json["musicName"] is JsonValue musicName) { Name = musicName.GetValue<string>(); }
+        if (json["album"] is JsonValue album) { Album = album.GetValue<string>(); }
+
+        var artists = json["artist"]?.AsArray();
+        if (artists is { Count: > 0 })
+        {
+            for (int i = 0; i < artists.Count; i++)
             {
-                for (int i = 0; i < artists.Count; i++)
+                if (artists[i] is JsonArray array)
                 {
-                    if (artists[i] is JsonArray array)
-                    {
-                        Artist.Add(array[0]?.GetValue<string>() ?? "");
-                    }
+                    Artist.Add(array[0]?.GetValue<string>() ?? "");
                 }
             }
-
-            if (json["bitrate"] is JsonValue bitrate) { Bitrate = bitrate.GetValue<int>(); }
-            if (json["duration"] is JsonValue duration) { Duration = duration.GetValue<int>(); }
-            if (json["format"] is JsonValue format) { Format = format.GetValue<string>(); }
         }
+
+        if (json["bitrate"] is JsonValue bitrate) { Bitrate = bitrate.GetValue<long>(); }
+        if (json["duration"] is JsonValue duration) { Duration = duration.GetValue<long>(); }
+        if (json["format"] is JsonValue format) { Format = format.GetValue<string>(); }
     }
 }

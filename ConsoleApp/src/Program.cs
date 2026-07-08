@@ -19,7 +19,7 @@ internal class Program
             }
         }
 
-        args = i < args.Length ? args[i..] : ([]);
+        args = i < args.Length ? args[i..] : [];
         ConsoleApp.Version = "1.1.0";
         ConsoleApp.Run(args, Commands.Process);
     }

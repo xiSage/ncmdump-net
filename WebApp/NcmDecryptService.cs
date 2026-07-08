@@ -1,5 +1,4 @@
 using LibNCM;
-using TagLib;
 
 namespace WebApp;
 
@@ -53,14 +52,14 @@ public class NcmDecryptService
             var decryptedBytes = decryptedStream.ToArray();
             byte[] resultBytes = ApplyMetadata(metadata, format, imageData, decryptedBytes);
 
-            var outputFileName = Path.GetFileNameWithoutExtension(fileName) + "." + format.ToString().ToLower();
+            var outputFileName = Path.GetFileNameWithoutExtension(fileName) + "." + format.ToString().ToLowerInvariant();
 
             return new NcmDecryptResult
             {
                 Success = true,
                 Data = resultBytes,
                 FileName = outputFileName,
-                Format = format.ToString().ToLower(),
+                Format = format.ToString().ToLowerInvariant(),
                 Metadata = metadata
             };
         }
@@ -84,7 +83,7 @@ public class NcmDecryptService
             outputStream.Write(decryptedBytes);
             outputStream.Position = 0;
 
-            var ext = format.ToString().ToLower();
+            var ext = format.ToString().ToLowerInvariant();
             var fileAbstraction = new MemoryStreamFileAbstraction($"output.{ext}", outputStream);
 
             using var tagFile = TagLib.File.Create(fileAbstraction);

@@ -1,7 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using DesktopApp.ViewModels;
-using System;
+using DesktopApp.Views;
 
 namespace DesktopApp
 {
@@ -13,15 +13,11 @@ namespace DesktopApp
             if (param is null)
                 return null;
 
-            var name = param.GetType().FullName!.Replace("ViewModel", "View", StringComparison.Ordinal);
-            var type = Type.GetType(name);
+            if (param is not ViewModelBase vm)
+                return new TextBlock { Text = "Unknown: " + param.GetType().Name };
 
-            if (type != null)
-            {
-                return (Control)Activator.CreateInstance(type)!;
-            }
-
-            return new TextBlock { Text = "Not Found: " + name };
+            var view = ViewMapping.ResolveView(vm);
+            return view ?? new TextBlock { Text = "Not Found: " + vm.GetType().Name };
         }
 
         public bool Match(object? data)

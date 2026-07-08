@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+
 namespace LibNCM;
 
 internal static class AesEcbPure
@@ -65,21 +67,14 @@ internal static class AesEcbPure
         var padLen = result[^1];
         if (padLen is > 0 and <= 16)
         {
-            var valid = true;
             for (var i = result.Length - padLen; i < result.Length; i++)
             {
                 if (result[i] != padLen)
-                {
-                    valid = false;
-                    break;
-                }
+                    throw new CryptographicException("Invalid PKCS#7 padding");
             }
-            if (valid)
-            {
-                var unpadded = new byte[result.Length - padLen];
-                Array.Copy(result, unpadded, unpadded.Length);
-                return unpadded;
-            }
+            var unpadded = new byte[result.Length - padLen];
+            Array.Copy(result, unpadded, unpadded.Length);
+            return unpadded;
         }
 
         return result;
