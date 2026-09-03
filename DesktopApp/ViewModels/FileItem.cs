@@ -63,11 +63,23 @@ namespace DesktopApp.ViewModels
             CanReset = false;
             try
             {
-                await using var ncm = NcmFile.Open(FilePath);
-                await ncm.DumpToFileAsync(SavePath, Path.GetFileNameWithoutExtension(FilePath), cancellationToken);
+                var result = await NcmProcessor.ProcessAsync(
+                    FilePath, SavePath, Path.GetFileNameWithoutExtension(FilePath),
+                    options: null, coverArtProvider: null, cancellationToken);
+
                 cancellationToken.ThrowIfCancellationRequested();
-                await ncm.FixMetadataAsync(fetchCoverArt: true, cancellationToken);
-                Message = "处理完成";
+
+                if (!result.Success)
+                {
+                    Message = result.ErrorMessage ?? "未知错误";
+                    StatusColor = Brushes.Red;
+                    CanRemove = true;
+                    CanReset = true;
+                    Status = StatusEnum.Failed;
+                    return;
+                }
+
+                Message = result.MetadataWarning is null ? "处理完成" : "处理完成（元数据写入失败）";
                 StatusColor = Brushes.Green;
                 CanRemove = true;
                 CanReset = false;

@@ -64,25 +64,19 @@ internal class Program
         var fileName = Path.GetFileNameWithoutExtension(filePath);
         outputDir ??= Path.GetDirectoryName(filePath) ?? "./";
 
-        try
+        var result = await NcmProcessor.ProcessAsync(filePath, outputDir, fileName);
+        if (result.Success)
         {
-            await using var ncm = NcmFile.Open(filePath);
-            await ncm.DumpToFileAsync(outputDir, fileName);
-            try
+            if (result.MetadataWarning is not null)
             {
-                await ncm.FixMetadataAsync(fetchCoverArt: true);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"[Warning] Fixing metadata of '{filePath}' failed: {e.Message}");
+                Console.WriteLine($"[Warning] Fixing metadata of '{filePath}' failed: {result.MetadataWarning}");
             }
             Console.WriteLine($"[Done] Processed '{filePath}' to '{outputDir}'");
+            return;
         }
-        catch (Exception e)
-        {
-            Console.WriteLine($"[Error] Processing '{filePath}' failed: {e.Message}");
-            throw;
-        }
+
+        Console.WriteLine($"[Error] Processing '{filePath}' failed: {result.ErrorMessage}");
+        Console.WriteLine($"[Error] Failed to process file '{filePath}'");
     }
 
     private static async Task ProcessDirectoryAsync(string directoryPath, string? outputDir, bool recursive)

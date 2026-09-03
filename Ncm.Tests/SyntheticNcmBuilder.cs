@@ -153,3 +153,15 @@ internal static class SyntheticNcmBuilder
         return encryptor.TransformFinalBlock(plain, 0, plain.Length);
     }
 }
+
+/// <summary>Cover provider stub for tests: records calls, returns or throws on demand.</summary>
+internal sealed class FakeCoverArtProvider(Func<byte[]> fetch) : ICoverArtProvider
+{
+    public int Calls { get; private set; }
+
+    public Task<byte[]?> FetchAsync(string albumPicUrl, CancellationToken cancellationToken = default)
+    {
+        Calls++;
+        return Task.FromResult<byte[]?>(fetch());
+    }
+}

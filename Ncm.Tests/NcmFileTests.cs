@@ -187,15 +187,4 @@ public class NcmFileTests : IDisposable
         public Stream WriteStream => stream;
         public void CloseStream(Stream stream) { }
     }
-
-    private sealed class FakeCoverArtProvider(Func<byte[]> fetch) : ICoverArtProvider
-    {
-        public int Calls { get; private set; }
-
-        public Task<byte[]?> FetchAsync(string albumPicUrl, CancellationToken cancellationToken = default)
-        {
-            Calls++;
-            return Task.FromResult<byte[]?>(fetch());
-        }
-    }
 }

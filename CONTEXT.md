@@ -26,7 +26,7 @@ NCM 文件的解析结果：容器格式（`NcmFormat`）、歌曲元数据（`N
 远程封面获取的 seam（ADR-0001 曾记为已知负债,现已实施）：`ICoverArtProvider` 接口 + `RemoteCoverArtProvider` 默认 HTTP 实现;`NcmFile.Open(path|stream, coverArtProvider?)` 可选注入,测试注入 fake——两个适配器 = 真 seam。
 
 ## 处理编排（processing orchestration）
-"打开→转储→写元数据→汇报结果"这一流程。现在仍由 CLI/GUI/Web 三端各自编写（各 3–5 行门面调用）;候选 2 提议把它上移为库内 `NcmProcessor` 编排门面（未实施）。
+"打开→转储→写元数据→汇报结果"的完整流程,现为库内深门面 `NcmProcessor`（`ProcessAsync` 文件目标 / `ProcessToBytesAsync` 内存目标):CLI/GUI/Web 各自只剩一行调用与界面表达。错误模型:致命失败 → `Success=false` + `ErrorMessage`;元数据写失败**非致命** → `MetadataWarning`。
 
 ## 消费者
 - **CLI**（ConsoleApp）：命令行批处理,`async` 调用门面,打印进度。

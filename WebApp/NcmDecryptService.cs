@@ -3,44 +3,28 @@ using LibNCM;
 namespace WebApp;
 
 /// <summary>
-///   Thin Web adapter over the LibNCM facade: decodes an in-memory .ncm file,
-///   embeds NCM metadata (no remote cover fetching in the browser context), and
-///   returns the tagged audio bytes. All format/decryption/tagging logic lives
-///   in LibNCM — this class only marshals bytes.
+///   Thin Web adapter over the LibNCM facade: decodes an in-memory .ncm file and
+///   returns the tagged audio bytes. All decryption/format/tagging logic lives in
+///   LibNCM — this class only marshals bytes into the Blazor DTO.
 /// </summary>
 public class NcmDecryptService
 {
     public static async Task<NcmDecryptResult> DecryptAsync(byte[] ncmData, string fileName)
     {
-        try
+        using var ms = new MemoryStream(ncmData);
+        // The browser context never fetches remote cover art.
+        var result = await NcmProcessor.ProcessToBytesAsync(
+            ms, fileName, new NcmProcessOptions { FetchCoverArt = false });
+
+        return new NcmDecryptResult
         {
-            await using var ncm = NcmFile.Open(new MemoryStream(ncmData));
-            _ = await ncm.DumpToBytesAsync();
-
-            if (ncm.Metadata is not null || ncm.ImageData is { Length: > 0 })
-            {
-                await ncm.FixMetadataAsync(fetchCoverArt: false);
-            }
-
-            var resultBytes = await ncm.DumpToBytesAsync();
-
-            return new NcmDecryptResult
-            {
-                Success = true,
-                Data = resultBytes,
-                FileName = ncm.OutputFileNameFor(fileName),
-                Format = ncm.FormatExtension,
-                Metadata = ncm.Metadata
-            };
-        }
-        catch (Exception ex)
-        {
-            return new NcmDecryptResult
-            {
-                Success = false,
-                ErrorMessage = ex.Message
-            };
-        }
+            Success = result.Success,
+            Data = result.Data,
+            FileName = result.OutputFileName,
+            Format = result.Success ? result.Format.ToString().ToLowerInvariant() : null,
+            Metadata = result.Metadata,
+            ErrorMessage = result.Success ? null : result.ErrorMessage
+        };
     }
 }
 
