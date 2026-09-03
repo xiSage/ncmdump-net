@@ -61,13 +61,12 @@ namespace DesktopApp.ViewModels
             StatusColor = Brushes.Yellow;
             CanRemove = false;
             CanReset = false;
-            NeteaseCloudMusicStream? ncm = null;
             try
             {
-                ncm = new NeteaseCloudMusicStream(FilePath);
-                await ncm.DumpToFileAsync(SavePath, Path.GetFileNameWithoutExtension(FilePath));
+                await using var ncm = NcmFile.Open(FilePath);
+                await ncm.DumpToFileAsync(SavePath, Path.GetFileNameWithoutExtension(FilePath), cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
-                await ncm.FixMetadataAsync(true);
+                await ncm.FixMetadataAsync(fetchCoverArt: true, cancellationToken);
                 Message = "处理完成";
                 StatusColor = Brushes.Green;
                 CanRemove = true;
@@ -90,10 +89,6 @@ namespace DesktopApp.ViewModels
                 CanRemove = true;
                 CanReset = true;
                 Status = StatusEnum.Failed;
-            }
-            finally
-            {
-                ncm?.Dispose();
             }
         }
     }

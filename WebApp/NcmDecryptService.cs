@@ -2,65 +2,35 @@ using LibNCM;
 
 namespace WebApp;
 
+/// <summary>
+///   Thin Web adapter over the LibNCM facade: decodes an in-memory .ncm file,
+///   embeds NCM metadata (no remote cover fetching in the browser context), and
+///   returns the tagged audio bytes. All format/decryption/tagging logic lives
+///   in LibNCM — this class only marshals bytes.
+/// </summary>
 public class NcmDecryptService
 {
-    private const int YieldInterval = 0x80000;
-
     public static async Task<NcmDecryptResult> DecryptAsync(byte[] ncmData, string fileName)
     {
         try
         {
-            NeteaseCloudMusicMetadata? metadata;
-            NeteaseCloudMusicStream.NcmFormat format;
-            byte[]? imageData;
+            await using var ncm = NcmFile.Open(new MemoryStream(ncmData));
+            _ = await ncm.DumpToBytesAsync();
 
-            var decryptedStream = new MemoryStream(ncmData.Length);
-            var buffer = new byte[0x8000];
-            var totalRead = 0;
-
-            using (var ms = new MemoryStream(ncmData))
-            using (var ncm = new NeteaseCloudMusicStream(ms))
+            if (ncm.Metadata is not null || ncm.ImageData is { Length: > 0 })
             {
-                while (true)
-                {
-                    int n;
-                    try
-                    {
-                        n = ncm.Read(buffer, 0, buffer.Length);
-                        if (n == 0) break;
-                    }
-                    catch (EndOfStreamException)
-                    {
-                        break;
-                    }
-
-                    decryptedStream.Write(buffer, 0, n);
-                    totalRead += n;
-
-                    if (totalRead >= YieldInterval)
-                    {
-                        totalRead = 0;
-                        await Task.Yield();
-                    }
-                }
-
-                metadata = ncm.Metadata;
-                format = ncm.Format;
-                imageData = ncm.ImageData;
+                await ncm.FixMetadataAsync(fetchCoverArt: false);
             }
 
-            var decryptedBytes = decryptedStream.ToArray();
-            byte[] resultBytes = ApplyMetadata(metadata, format, imageData, decryptedBytes);
-
-            var outputFileName = Path.GetFileNameWithoutExtension(fileName) + "." + format.ToString().ToLowerInvariant();
+            var resultBytes = await ncm.DumpToBytesAsync();
 
             return new NcmDecryptResult
             {
                 Success = true,
                 Data = resultBytes,
-                FileName = outputFileName,
-                Format = format.ToString().ToLowerInvariant(),
-                Metadata = metadata
+                FileName = ncm.OutputFileNameFor(fileName),
+                Format = ncm.FormatExtension,
+                Metadata = ncm.Metadata
             };
         }
         catch (Exception ex)
@@ -71,53 +41,6 @@ public class NcmDecryptService
                 ErrorMessage = ex.Message
             };
         }
-    }
-
-    private static byte[] ApplyMetadata(NeteaseCloudMusicMetadata? metadata, NeteaseCloudMusicStream.NcmFormat format, byte[]? imageData, byte[] decryptedBytes)
-    {
-        if (metadata is null && imageData is null) return decryptedBytes;
-
-        try
-        {
-            using var outputStream = new MemoryStream();
-            outputStream.Write(decryptedBytes);
-            outputStream.Position = 0;
-
-            var ext = format.ToString().ToLowerInvariant();
-            var fileAbstraction = new MemoryStreamFileAbstraction($"output.{ext}", outputStream);
-
-            using var tagFile = TagLib.File.Create(fileAbstraction);
-
-            if (metadata is { } m)
-            {
-                tagFile.Tag.Title = m.Name;
-                tagFile.Tag.Performers = [.. m.Artist];
-                tagFile.Tag.Album = m.Album;
-            }
-
-            if (imageData?.Length > 0)
-            {
-                tagFile.Tag.Pictures = [new TagLib.Picture(imageData)];
-            }
-
-            tagFile.Save();
-
-            return outputStream.ToArray();
-        }
-        catch
-        {
-            return decryptedBytes;
-        }
-    }
-
-    private class MemoryStreamFileAbstraction(string name, MemoryStream stream) : TagLib.File.IFileAbstraction
-    {
-
-        public string Name { get; } = name;
-        public Stream ReadStream => stream;
-        public Stream WriteStream => stream;
-
-        public void CloseStream(Stream stream) { }
     }
 }
 
