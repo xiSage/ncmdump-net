@@ -5,13 +5,13 @@
     <NoWarn>$(NoWarn);NU1507</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Avalonia" Version="12.0.5" />
-    <PackageVersion Include="Avalonia.Desktop" Version="12.0.5" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.0.5" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.0.5" />
+    <PackageVersion Include="Avalonia" Version="12.1.2" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.1.2" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.1.2" />
     <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="ConsoleAppFramework" Version="5.7.13" />
+    <PackageVersion Include="FluentAvaloniaUI" Version="3.1.0" />
     <PackageVersion Include="TagLibSharp" Version="2.3.0" />
     <PackageVersion Include="Xaml.Behaviors.Interactions.DragAndDrop" Version="12.0.5" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.9" />

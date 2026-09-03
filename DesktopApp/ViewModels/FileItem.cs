@@ -19,7 +19,7 @@ namespace DesktopApp.ViewModels
         [ObservableProperty]
         public partial string SavePath { get; set; } = savePath;
 
-        public enum StatusEnum { Waiting, Processing, Finished, Failed }
+        public enum StatusEnum { Waiting, Processing, Finished, Failed, Cancelled }
 
         [ObservableProperty]
         public partial StatusEnum Status { get; set; } = StatusEnum.Waiting;
@@ -28,13 +28,35 @@ namespace DesktopApp.ViewModels
         public partial string Message { get; set; } = "等待处理";
 
         [ObservableProperty]
-        public partial IBrush StatusColor { get; set; } = Brushes.Transparent;
+        public partial IBrush StatusColor { get; set; } = StatusWaitingBrush;
 
         [ObservableProperty]
         public partial bool CanRemove { get; set; } = true;
 
         [ObservableProperty]
         public partial bool CanReset { get; set; } = false;
+
+        /// <summary>状态徽章文字，随 <see cref="Status"/> 联动。</summary>
+        public string StatusText => Status switch
+        {
+            StatusEnum.Waiting => "等待处理",
+            StatusEnum.Processing => "处理中",
+            StatusEnum.Finished => "完成",
+            StatusEnum.Failed => "失败",
+            StatusEnum.Cancelled => "已取消",
+            _ => Status.ToString()
+        };
+
+        // 浅/深色下都可读的中性色调，替代默认色板。
+        private static readonly IBrush StatusWaitingBrush = new SolidColorBrush(0xFF929292);
+        private static readonly IBrush StatusProcessingBrush = new SolidColorBrush(0xFFF5A623);
+        private static readonly IBrush StatusFinishedBrush = new SolidColorBrush(0xFF34C759);
+        private static readonly IBrush StatusFailedBrush = new SolidColorBrush(0xFFE5484D);
+
+        partial void OnStatusChanged(StatusEnum value)
+        {
+            OnPropertyChanged(nameof(StatusText));
+        }
 
         [RelayCommand]
         public void Remove()
@@ -46,7 +68,7 @@ namespace DesktopApp.ViewModels
         public void Reset()
         {
             Message = "等待处理";
-            StatusColor = Brushes.Transparent;
+            StatusColor = StatusWaitingBrush;
             CanRemove = true;
             CanReset = false;
             Status = StatusEnum.Waiting;
@@ -58,7 +80,7 @@ namespace DesktopApp.ViewModels
             cancellationToken.ThrowIfCancellationRequested();
             Status = StatusEnum.Processing;
             Message = "正在处理";
-            StatusColor = Brushes.Yellow;
+            StatusColor = StatusProcessingBrush;
             CanRemove = false;
             CanReset = false;
             try
@@ -72,7 +94,7 @@ namespace DesktopApp.ViewModels
                 if (!result.Success)
                 {
                     Message = result.ErrorMessage ?? "未知错误";
-                    StatusColor = Brushes.Red;
+                    StatusColor = StatusFailedBrush;
                     CanRemove = true;
                     CanReset = true;
                     Status = StatusEnum.Failed;
@@ -80,7 +102,7 @@ namespace DesktopApp.ViewModels
                 }
 
                 Message = result.MetadataWarning is null ? "处理完成" : "处理完成（元数据写入失败）";
-                StatusColor = Brushes.Green;
+                StatusColor = StatusFinishedBrush;
                 CanRemove = true;
                 CanReset = false;
                 Status = StatusEnum.Finished;
@@ -88,16 +110,16 @@ namespace DesktopApp.ViewModels
             catch (OperationCanceledException)
             {
                 Message = "已取消";
-                StatusColor = Brushes.Gray;
+                StatusColor = StatusWaitingBrush;
                 CanRemove = true;
                 CanReset = true;
-                Status = StatusEnum.Waiting;
+                Status = StatusEnum.Cancelled;
                 throw;
             }
             catch (Exception e)
             {
                 Message = e.Message;
-                StatusColor = Brushes.Red;
+                StatusColor = StatusFailedBrush;
                 CanRemove = true;
                 CanReset = true;
                 Status = StatusEnum.Failed;

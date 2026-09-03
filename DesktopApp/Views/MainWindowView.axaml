@@ -1,15 +1,16 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:DesktopApp.ViewModels"
+        xmlns:ui="using:FluentAvalonia.UI.Controls"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="580"
         x:Class="DesktopApp.Views.MainWindowView"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/icon.ico"
         Title="ncmdump"
-        MinWidth="800" MinHeight="450"
-        Width="800" Height="450">
+        MinWidth="760" MinHeight="480"
+        Width="900" Height="580">
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
@@ -21,61 +22,153 @@
 	    <FilesDropBehavior Command="{Binding DropFilesCommand}"/>
     </Interaction.Behaviors>
 
-    <DockPanel LastChildFill="True">
-        <Border BorderBrush="Gray"
-                BorderThickness="2"
-                CornerRadius="3"
-                Padding="10" Margin="10"
-                DockPanel.Dock="Top"
-                Height="100">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" >
-                <Button Content="添加文件" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="20" Command="{Binding SelectFileCommand}"/>
-                <Button Content="添加文件夹" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="20" Command="{Binding SelectFolderCommand}"/>
-                <Button Content="清除已完成任务" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="20" IsEnabled="{Binding HaveFile}" Command="{Binding ClearFinishedFilesCommand}"/>
-                <Button Content="清除所有任务" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="20" IsEnabled="{Binding HaveFile}" Command="{Binding ClearFilesCommand}"/>
-            </StackPanel>
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- 顶部工具条：文件来源 + 输出设置 -->
+        <Grid Grid.Row="0"
+              ColumnDefinitions="Auto,Auto,*,Auto,Auto"
+              ColumnSpacing="8"
+              Margin="16,12,16,8">
+            <Button Grid.Column="0" Command="{Binding SelectFileCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <ui:FASymbolIcon Symbol="OpenFile" FontSize="14"/>
+                    <TextBlock Text="添加文件"/>
+                </StackPanel>
+            </Button>
+            <Button Grid.Column="1" Command="{Binding SelectFolderCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <ui:FASymbolIcon Symbol="OpenFolder" FontSize="14"/>
+                    <TextBlock Text="添加文件夹"/>
+                </StackPanel>
+            </Button>
+            <CheckBox Grid.Column="3"
+                      Content="输出到源文件目录"
+                      IsChecked="{Binding ExportToSource}"
+                      VerticalAlignment="Center"/>
+            <Button Grid.Column="4"
+                    Command="{Binding GetSaveFolderCommand}"
+                    IsEnabled="{Binding !ExportToSource}"
+                    VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <ui:FASymbolIcon Symbol="Folder" FontSize="14"/>
+                    <TextBlock Text="选择输出文件夹"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- 任务列表卡片 -->
+        <Border Grid.Row="1"
+                Margin="16,4,16,8"
+                CornerRadius="{DynamicResource OverlayCornerRadius}"
+                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+            <Panel>
+                <ScrollViewer>
+                    <ItemsControl ItemsSource="{Binding FileItems}" Margin="4">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:FileItem">
+                                <Border Padding="12,10"
+                                        BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                                        BorderThickness="0,0,0,1">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                        <Ellipse Width="10" Height="10"
+                                                 Fill="{Binding StatusColor}"
+                                                 VerticalAlignment="Center"/>
+                                        <StackPanel Grid.Column="1" Spacing="3">
+                                            <TextBlock Text="{Binding FilePath}"
+                                                       FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                <Border CornerRadius="10"
+                                                        Padding="8,1"
+                                                        Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                                    <TextBlock Text="{Binding StatusText}"
+                                                               FontSize="11"
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                </Border>
+                                                <TextBlock Text="{Binding Message}"
+                                                           FontSize="12"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding SavePath}"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2"
+                                                    Orientation="Horizontal"
+                                                    Spacing="4"
+                                                    VerticalAlignment="Center">
+                                            <Button Content="重置"
+                                                    FontSize="12" Padding="10,4"
+                                                    Command="{Binding ResetCommand}"
+                                                    IsVisible="{Binding CanReset}"/>
+                                            <Button Content="移除"
+                                                    FontSize="12" Padding="10,4"
+                                                    Command="{Binding RemoveCommand}"
+                                                    IsEnabled="{Binding CanRemove}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- 空状态引导 -->
+                <StackPanel IsVisible="{Binding IsEmpty}"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            Spacing="12">
+                    <!-- 矢量音符：不走 FASymbolIcon 字形字体，避免个别符号缺字形渲染成占位方块 -->
+                    <ui:FAPathIcon Data="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                                   Width="42" Height="42" Stretch="Uniform"
+                                   Opacity="0.55"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                   HorizontalAlignment="Center"/>
+                    <TextBlock Text="拖拽 .ncm 文件到此处，或点击上方按钮添加"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Panel>
         </Border>
-        <Border BorderBrush="Gray"
-                BorderThickness="2"
-                CornerRadius="3"
-                Padding="10" Margin="10"
-                DockPanel.Dock="Bottom"
-                Height="100">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <CheckBox Content="输出到源文件目录" IsChecked="{Binding ExportToSource}" Margin="10"/>
-                <Button Content="选择输出文件夹" Margin="10" IsEnabled="{Binding !ExportToSource}" Command="{Binding GetSaveFolderCommand}"/>
-                <Button Content="开始处理" Margin="10" IsEnabled="{Binding CanStartProcessing}" Command="{Binding ProcessFilesCommand}"/>
-                <Button Content="停止处理" Margin="10" IsEnabled="{Binding !CanProcess}" Command="{Binding StopProcessingCommand}"/>
-            </StackPanel>
-        </Border>
-        <Border BorderBrush="Gray"
-                BorderThickness="2"
-                CornerRadius="3"
-                Padding="10" Margin="10">
-            <ScrollViewer>
-                <ItemsControl ItemsSource="{Binding FileItems}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:FileItem">
-                            <Expander HorizontalAlignment="Stretch">
-                                <Expander.Header>
-                                    <StackPanel Orientation="Horizontal">
-                                        <Rectangle Fill="{Binding StatusColor}" Width="20" Height="20"/>
-                                        <TextBlock Text="{Binding FilePath}" Margin="10"/>
-                                    </StackPanel>
-                                </Expander.Header>
-                                <Grid RowDefinitions="*,*" ColumnDefinitions="150,*,100,100">
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text ="任务状态"/>
-                                    <TextBlock Grid.Row="0" Grid.Column="1" Text ="{Binding Message}"/>
-                                    <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" Content="重置任务" IsVisible="{Binding CanReset}" Command="{Binding ResetCommand}"/>
-                                    <Button Grid.Row="0" Grid.Column="3" HorizontalAlignment="Right" Content="移除任务" IsEnabled="{Binding CanRemove}" Command="{Binding RemoveCommand}"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text ="输出目录"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="1" Text ="{Binding SavePath}"/>
-                                </Grid>
-                            </Expander>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
-        </Border>
-    </DockPanel>
+
+        <!-- 底部操作条：统计 + 处理控制 -->
+        <Grid Grid.Row="2"
+              ColumnDefinitions="*,Auto,Auto,Auto,Auto"
+              ColumnSpacing="8"
+              Margin="16,8,16,14">
+            <TextBlock Text="{Binding FileItems.Count, StringFormat='共 {0} 个文件'}"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       VerticalAlignment="Center"/>
+            <Button Grid.Column="1"
+                    Content="清除已完成任务"
+                    Command="{Binding ClearFinishedFilesCommand}"
+                    IsEnabled="{Binding HaveFile}"/>
+            <Button Grid.Column="2"
+                    Content="清除所有任务"
+                    Command="{Binding ClearFilesCommand}"
+                    IsEnabled="{Binding HaveFile}"/>
+            <Button Grid.Column="3"
+                    Classes="accent"
+                    Command="{Binding ProcessFilesCommand}"
+                    IsEnabled="{Binding CanStartProcessing}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <ui:FASymbolIcon Symbol="Play" FontSize="14"/>
+                    <TextBlock Text="开始处理"/>
+                </StackPanel>
+            </Button>
+            <Button Grid.Column="4"
+                    Command="{Binding StopProcessingCommand}"
+                    IsEnabled="{Binding !CanProcess}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <ui:FASymbolIcon Symbol="Stop" FontSize="14"/>
+                    <TextBlock Text="停止处理"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+    </Grid>
 </Window>

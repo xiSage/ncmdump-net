@@ -30,6 +30,9 @@ namespace DesktopApp.ViewModels
         public ObservableCollection<FileItem> FileItems { get; } = [];
         public HashSet<string> AddedFiles { get; } = [];
 
+        /// <summary>任务列表为空（用于空状态引导的可见性）。</summary>
+        public bool IsEmpty => !HaveFile;
+
         private CancellationTokenSource? _processCts;
 
         public bool CanStartProcessing => CanProcess && HaveFile;
@@ -239,6 +242,7 @@ namespace DesktopApp.ViewModels
         partial void OnHaveFileChanged(bool oldValue, bool newValue)
         {
             OnPropertyChanged(nameof(CanStartProcessing));
+            OnPropertyChanged(nameof(IsEmpty));
         }
     }
 }

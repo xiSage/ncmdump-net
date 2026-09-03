@@ -1,15 +1,15 @@
-﻿<Application xmlns="https://github.com/avaloniaui"
+<Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="DesktopApp.App"
              xmlns:local="using:DesktopApp"
-             RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+             xmlns:sty="using:FluentAvalonia.Styling"
+             x:Class="DesktopApp.App">
 
     <Application.DataTemplates>
         <local:ViewLocator/>
     </Application.DataTemplates>
-  
+
     <Application.Styles>
-        <FluentTheme />
+        <!-- FluentAvalonia 主题：WinUI 风格，PreferSystemTheme 跟随系统浅/深色与高对比 -->
+        <sty:FluentAvaloniaTheme PreferSystemTheme="True"/>
     </Application.Styles>
 </Application>

@@ -15,8 +15,8 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" />
+    <PackageReference Include="FluentAvaloniaUI" />
     <PackageReference Include="Avalonia.Desktop" />
-    <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="AvaloniaUI.DiagnosticsSupport" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
