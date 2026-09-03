@@ -5,6 +5,11 @@ using DesktopApp.Views;
 
 namespace DesktopApp
 {
+    /// <summary>
+    ///   Resolves the View for a ViewModel. The mapping is a plain, enumerable
+    ///   switch — statically visible to trimming/AOT, so no source generator is
+    ///   needed (a one-to-one mapping for a single ViewModel never justified one).
+    /// </summary>
     public class ViewLocator : IDataTemplate
     {
 
@@ -16,8 +21,11 @@ namespace DesktopApp
             if (param is not ViewModelBase vm)
                 return new TextBlock { Text = "Unknown: " + param.GetType().Name };
 
-            var view = ViewMapping.ResolveView(vm);
-            return view ?? new TextBlock { Text = "Not Found: " + vm.GetType().Name };
+            return vm switch
+            {
+                MainWindowViewModel => new MainWindowView(),
+                _ => new TextBlock { Text = "Not Found: " + vm.GetType().Name }
+            };
         }
 
         public bool Match(object? data)

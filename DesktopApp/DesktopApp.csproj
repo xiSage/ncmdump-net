@@ -26,9 +26,6 @@
     <ProjectReference Include="..\LibNCM\LibNCM.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DesktopApp.SourceGen\DesktopApp.SourceGen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-  </ItemGroup>
-  <ItemGroup>
     <TrimmerRootDescriptor Include="Roots.xml" />
   </ItemGroup>
 </Project>
