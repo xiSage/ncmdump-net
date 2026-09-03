@@ -38,9 +38,9 @@ internal (InternalsVisibleTo → Ncm.Tests)
 
 ## 明确不做（本决策范围外）
 
-- 静态 `HttpClient` 封面下载本轮保持原状（已知负债,记入 CONTEXT.md,候选 3 处理）。
+- ~~静态 `HttpClient` 封面下载本轮保持原状~~：已由后续 `ICoverArtProvider` seam 落地（`RemoteCoverArtProvider` 默认实现 + 注入点,见 `CONTEXT.md`）。`Roots.xml` 已收敛为 `build/Roots.xml` 单份共享;nupkg 打包仍不含 Roots.xml,另行处理。
 - 编排(处理一个文件的流程)仍在三端各写(各 3–5 行门面调用),不上移(候选 2)。
-- 三份逐字节相同的 `Roots.xml` trimmer 根与 nupkg 内容漂移(包不含 Roots.xml、仅 net9.0)不在此次修复,另行处理。
+- ~~三份逐字节相同的 `Roots.xml` trimmer 根~~：已收敛为 `build/Roots.xml` 单份共享;nupkg 打包内容漂移(包不含 Roots.xml、仅 net9.0)另行处理。
 
 ## 后果
 

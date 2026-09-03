@@ -113,6 +113,46 @@ public class NcmFileTests : IDisposable
     }
 
     [Fact]
+    public async Task FixMetadata_FetchCoverArt_UsesInjectedProvider()
+    {
+        var fetchedCover = new byte[] { 0xFF, 0xD8, 0xAA, 0xBB };
+        var provider = new FakeCoverArtProvider(() => fetchedCover);
+        var bytes = SyntheticNcmBuilder.BuildFile(withCover: false); // no embedded image ⇒ fetch path
+        await using var ncm = NcmFile.Open(OpenStreamOf(bytes), provider);
+
+        await ncm.FixMetadataAsync(fetchCoverArt: true);
+
+        Assert.Equal(1, provider.Calls);
+        Assert.Equal(fetchedCover, ncm.ImageData);
+        var tagged = await ncm.DumpToBytesAsync();
+        using var tagFile = TagLib.File.Create(new TestFileAbstraction("out.flac", new MemoryStream(tagged)));
+        Assert.NotEmpty(tagFile.Tag.Pictures);
+        Assert.Equal(fetchedCover.Length, tagFile.Tag.Pictures[0].Data.Data.Length);
+    }
+
+    [Fact]
+    public async Task FixMetadata_ProviderFailure_Throws()
+    {
+        var provider = new FakeCoverArtProvider(() => throw new HttpRequestException("network down"));
+        var bytes = SyntheticNcmBuilder.BuildFile(withCover: false);
+        await using var ncm = NcmFile.Open(OpenStreamOf(bytes), provider);
+
+        await Assert.ThrowsAsync<NcmMetadataException>(() => ncm.FixMetadataAsync(fetchCoverArt: true));
+    }
+
+    [Fact]
+    public async Task FixMetadata_EmbeddedCover_PreventsRemoteFetch()
+    {
+        var provider = new FakeCoverArtProvider(() => throw new InvalidOperationException("must not be called"));
+        var bytes = SyntheticNcmBuilder.BuildFile(withCover: true); // embedded image ⇒ no fetch needed
+        await using var ncm = NcmFile.Open(OpenStreamOf(bytes), provider);
+
+        await ncm.FixMetadataAsync(fetchCoverArt: true);
+
+        Assert.Equal(0, provider.Calls);
+    }
+
+    [Fact]
     public void OpenRejectsNonNcmStream()
     {
         using var ms = new MemoryStream(new byte[32]);
@@ -146,5 +186,16 @@ public class NcmFileTests : IDisposable
         public Stream ReadStream => stream;
         public Stream WriteStream => stream;
         public void CloseStream(Stream stream) { }
+    }
+
+    private sealed class FakeCoverArtProvider(Func<byte[]> fetch) : ICoverArtProvider
+    {
+        public int Calls { get; private set; }
+
+        public Task<byte[]?> FetchAsync(string albumPicUrl, CancellationToken cancellationToken = default)
+        {
+            Calls++;
+            return Task.FromResult<byte[]?>(fetch());
+        }
     }
 }

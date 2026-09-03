@@ -23,7 +23,7 @@ NCM 文件的解析结果：容器格式（`NcmFormat`）、歌曲元数据（`N
 `NcmFile`：公开的唯一入口。`Open`（路径/流）完成`NcmHeaderParser.Parse`;之后 `DumpToBytesAsync` / `DumpToFileAsync` / `FixMetadataAsync` 全部幂等、带取消令牌、无隐式状态跳变。三端消费者（CLI/GUI/Web）只与门面打交道。_规避词_：「服务」（会与 `NcmDecryptService` 等 Web 端薄适配器混淆）。
 
 ## 封面提供器（cover provider）
-**候选 3**（未实施）计划引入的 seam:`ICoverArtProvider` 替换 `NcmFile` 内静态 `HttpClient` 的远程封面下载。现阶段远程封面获取仍然静态、不可注入——ADR-0001 已记录为已知负债。
+远程封面获取的 seam（ADR-0001 曾记为已知负债,现已实施）：`ICoverArtProvider` 接口 + `RemoteCoverArtProvider` 默认 HTTP 实现;`NcmFile.Open(path|stream, coverArtProvider?)` 可选注入,测试注入 fake——两个适配器 = 真 seam。
 
 ## 处理编排（processing orchestration）
 "打开→转储→写元数据→汇报结果"这一流程。现在仍由 CLI/GUI/Web 三端各自编写（各 3–5 行门面调用）;候选 2 提议把它上移为库内 `NcmProcessor` 编排门面（未实施）。

@@ -26,6 +26,6 @@
     <ProjectReference Include="..\LibNCM\LibNCM.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <TrimmerRootDescriptor Include="Roots.xml" />
+    <TrimmerRootDescriptor Include="..\build\Roots.xml" />
   </ItemGroup>
 </Project>

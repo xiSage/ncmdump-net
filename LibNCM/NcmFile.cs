@@ -15,25 +15,31 @@ namespace LibNCM;
 /// </remarks>
 public sealed class NcmFile : IDisposable, IAsyncDisposable
 {
-    private static readonly HttpClient SharedHttpClient = new();
-
     private readonly Stream _rawStream;
     private readonly NcmHeader _header;
     private readonly long _audioOffset;
+    private readonly ICoverArtProvider _coverArtProvider;
     private byte[]? _audioBytes;
     private string? _outputFilePath;
 
-    private NcmFile(Stream rawStream, NcmHeader header)
+    private NcmFile(Stream rawStream, NcmHeader header, ICoverArtProvider? coverArtProvider)
     {
         _rawStream = rawStream;
         _header = header;
+        _coverArtProvider = coverArtProvider ?? new RemoteCoverArtProvider();
         // After parsing, the stream sits at the start of the audio payload.
         _audioOffset = rawStream.Position;
     }
 
-    /// <summary>Opens and parses an NCM file from a path.</summary>
+    /// <summary>
+    ///   Opens and parses an NCM file from a path.
+    /// </summary>
+    /// <param name="coverArtProvider">
+    ///   Optional cover fetch implementation; defaults to the production HTTP
+    ///   provider. Inject a fake in tests or hosts without network access.
+    /// </param>
     /// <exception cref="NcmFileFormatException">The file is not a valid NCM file.</exception>
-    public static NcmFile Open(string filePath)
+    public static NcmFile Open(string filePath, ICoverArtProvider? coverArtProvider = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(filePath);
         Stream stream;
@@ -56,19 +62,23 @@ public sealed class NcmFile : IDisposable, IAsyncDisposable
             stream.Dispose();
             throw;
         }
-        return new NcmFile(stream, header);
+        return new NcmFile(stream, header, coverArtProvider);
     }
 
     /// <summary>
     ///   Opens and parses an NCM file from a stream. The stream must support
     ///   seeking; ownership transfers to the returned <see cref="NcmFile"/>.
     /// </summary>
+    /// <param name="coverArtProvider">
+    ///   Optional cover fetch implementation; defaults to the production HTTP
+    ///   provider. Inject a fake in tests or hosts without network access.
+    /// </param>
     /// <exception cref="NcmFileFormatException">The stream is not a valid NCM file.</exception>
-    public static NcmFile Open(Stream stream)
+    public static NcmFile Open(Stream stream, ICoverArtProvider? coverArtProvider = null)
     {
         ArgumentNullException.ThrowIfNull(stream);
         var header = NcmHeaderParser.Parse(stream);
-        return new NcmFile(stream, header);
+        return new NcmFile(stream, header, coverArtProvider);
     }
 
     public NcmFormat Format => _header.Format;
@@ -137,10 +147,10 @@ public sealed class NcmFile : IDisposable, IAsyncDisposable
         {
             try
             {
-                var response = await SharedHttpClient.GetAsync(_header.AlbumPicUrl, cancellationToken).ConfigureAwait(false);
-                if (response.IsSuccessStatusCode)
+                var fetched = await _coverArtProvider.FetchAsync(_header.AlbumPicUrl, cancellationToken).ConfigureAwait(false);
+                if (fetched is { Length: > 0 })
                 {
-                    _header.ImageData = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+                    _header.ImageData = fetched;
                 }
             }
             catch (Exception e)
