@@ -100,8 +100,8 @@ jobs:
         run: |
           ARGS="-c Release"
           if [ -n "${{ matrix.rid }}" ]; then ARGS="$ARGS -r ${{ matrix.rid }}"; fi
-          if [ "${{ matrix.aot }}" = "false" ]; then ARGS="$ARGS /p:PublishAot=false"; fi
-          if [ "${{ matrix.apphost }}" = "false" ]; then ARGS="$ARGS /p:UseAppHost=false"; fi
+          if [ "${{ matrix.aot }}" = "false" ]; then ARGS="$ARGS -p:PublishAot=false"; fi
+          if [ "${{ matrix.apphost }}" = "false" ]; then ARGS="$ARGS -p:UseAppHost=false"; fi
           dotnet publish ConsoleApp/ConsoleApp.csproj $ARGS
 
       - name: Publish DesktopApp
@@ -109,8 +109,8 @@ jobs:
         run: |
           ARGS="-c Release"
           if [ -n "${{ matrix.rid }}" ]; then ARGS="$ARGS -r ${{ matrix.rid }}"; fi
-          if [ "${{ matrix.aot }}" = "false" ]; then ARGS="$ARGS /p:PublishAot=false"; fi
-          if [ "${{ matrix.apphost }}" = "false" ]; then ARGS="$ARGS /p:UseAppHost=false"; fi
+          if [ "${{ matrix.aot }}" = "false" ]; then ARGS="$ARGS -p:PublishAot=false"; fi
+          if [ "${{ matrix.apphost }}" = "false" ]; then ARGS="$ARGS -p:UseAppHost=false"; fi
           dotnet publish DesktopApp/DesktopApp.csproj $ARGS
 
       - name: Package
@@ -121,12 +121,13 @@ jobs:
           if [ -n "${{ matrix.rid }}" ]; then SUFFIX="/${{ matrix.rid }}"; fi
           BASE="bin/Release/net10.0${SUFFIX}/publish"
           mkdir -p dist
+          # 注意:全程使用相对路径 + tar -C,避免 Windows 上盘符路径被 bsdtar 当成 host:path
           if [ "${{ matrix.kind }}" = "zip" ]; then
-            (cd "ConsoleApp/$BASE" && tar -a -cf "$GITHUB_WORKSPACE/dist/ncmdump-net-${{ matrix.name }}.zip" .)
-            (cd "DesktopApp/$BASE" && tar -a -cf "$GITHUB_WORKSPACE/dist/ncmdump-net-gui-${{ matrix.name }}.zip" .)
+            tar -a -cf "dist/ncmdump-net-${{ matrix.name }}.zip" -C "ConsoleApp/$BASE" .
+            tar -a -cf "dist/ncmdump-net-gui-${{ matrix.name }}.zip" -C "DesktopApp/$BASE" .
           else
-            (cd "ConsoleApp/$BASE" && tar -czf "$GITHUB_WORKSPACE/dist/ncmdump-net-${{ matrix.name }}.tar.gz" .)
-            (cd "DesktopApp/$BASE" && tar -czf "$GITHUB_WORKSPACE/dist/ncmdump-net-gui-${{ matrix.name }}.tar.gz" .)
+            tar -czf "dist/ncmdump-net-${{ matrix.name }}.tar.gz" -C "ConsoleApp/$BASE" .
+            tar -czf "dist/ncmdump-net-gui-${{ matrix.name }}.tar.gz" -C "DesktopApp/$BASE" .
           fi
           ls -la dist
 

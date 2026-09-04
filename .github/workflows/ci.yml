@@ -95,9 +95,9 @@ jobs:
             **/*.csproj
             **/Directory.Packages.props
       - name: Publish ConsoleApp
-        run: dotnet publish ConsoleApp/ConsoleApp.csproj -c Release -r ${{ matrix.rid }} /p:PublishAot=false
+        run: dotnet publish ConsoleApp/ConsoleApp.csproj -c Release -r ${{ matrix.rid }} -p:PublishAot=false
       - name: Publish DesktopApp
-        run: dotnet publish DesktopApp/DesktopApp.csproj -c Release -r ${{ matrix.rid }} /p:PublishAot=false
+        run: dotnet publish DesktopApp/DesktopApp.csproj -c Release -r ${{ matrix.rid }} -p:PublishAot=false
       - name: Upload ConsoleApp
         uses: actions/upload-artifact@v4
         with:
