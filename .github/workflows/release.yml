@@ -148,7 +148,7 @@ jobs:
           VER="${GITHUB_REF_NAME#v}"
           VER="${VER#v}"
           echo "version=${VER}" >> "$GITHUB_OUTPUT"
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: assets
           pattern: release-*
