@@ -1,0 +1,117 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule:
+    # 每周一 03:23 UTC 例行跑一轮(触发 CodeQL 定期扫描)
+    - cron: '23 3 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+          cache: true
+      - name: Restore
+        run: dotnet restore ncmdump-net.slnx
+      - name: Test
+        run: dotnet test ncmdump-net.slnx -c Release --no-restore
+
+  format:
+    name: Format check
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+          cache: true
+      - name: Verify formatting
+        run: dotnet format ncmdump-net.slnx --severity info --verify-no-changes
+
+  web:
+    name: WebApp build check
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+          cache: true
+      - name: Restore
+        run: dotnet restore ncmdump-net.slnx
+      - name: Publish WebApp
+        run: dotnet publish WebApp/WebApp.csproj -c Release --no-restore -o web-publish
+
+  # PR 试玩包:只出最常用的两个平台、非 AOT,省 CI 分钟数;完整矩阵留给 release
+  pr-artifacts:
+    name: PR artifacts (${{ matrix.name }})
+    if: github.event_name == 'pull_request'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x64
+            os: ubuntu-22.04
+            rid: linux-x64
+          - name: win-x64
+            os: windows-latest
+            rid: win-x64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+          cache: true
+      - name: Publish ConsoleApp
+        run: dotnet publish ConsoleApp/ConsoleApp.csproj -c Release -r ${{ matrix.rid }} /p:PublishAot=false
+      - name: Publish DesktopApp
+        run: dotnet publish DesktopApp/DesktopApp.csproj -c Release -r ${{ matrix.rid }} /p:PublishAot=false
+      - name: Upload ConsoleApp
+        uses: actions/upload-artifact@v4
+        with:
+          name: ncmdump-net-${{ matrix.name }}
+          path: ConsoleApp/bin/Release/net10.0/${{ matrix.rid }}/publish
+      - name: Upload DesktopApp
+        uses: actions/upload-artifact@v4
+        with:
+          name: ncmdump-net-gui-${{ matrix.name }}
+          path: DesktopApp/bin/Release/net10.0/${{ matrix.rid }}/publish
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+          cache: true
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+      - name: Build
+        run: dotnet build ncmdump-net.slnx -c Release
+      - uses: github/codeql-action/analyze@v3

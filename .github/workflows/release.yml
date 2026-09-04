@@ -1,0 +1,203 @@
+name: release
+
+# 触发方式:
+#  1. 推送 v* tag(如 v2.0.0)→ 构建全平台矩阵、打包并发布 GitHub Release
+#  2. workflow_dispatch 手动触发 → 只构建并上传 artifact;勾选 publishNuget 时才发布 NuGet
+# 版本号:tag 触发取 tag(v2.0.0 → 2.0.0);手动触发取 inputs.version;贯穿注入 /p:Version
+# 注意:tag 触发不自动发 NuGet(保持人工 gate),NuGet 只通过手动触发 + 勾选 publishNuget
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 手动触发的版本号(如 2.0.0 或 v2.0.0);推送 tag 时忽略,发布 NuGet 时必填
+        required: false
+        type: string
+      publishNuget:
+        description: 同时发布 NuGet 包(需要仓库 NUGET_API_KEY secret)
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x64
+            os: ubuntu-22.04
+            rid: linux-x64
+            aot: true
+            kind: tar
+          - name: linux-arm64
+            os: ubuntu-22.04
+            rid: linux-arm64
+            aot: false # 交叉编译自包含(非 AOT),不依赖 arm runner
+            kind: tar
+          - name: win-any
+            os: windows-latest
+            rid: '' # 框架依赖 + 无 apphost,需要 .NET 运行时
+            aot: false
+            apphost: false
+            kind: zip
+          - name: win-x64
+            os: windows-latest
+            rid: win-x64
+            aot: true
+            kind: zip
+          - name: win-x86
+            os: windows-latest
+            rid: win-x86
+            aot: true
+            kind: zip
+          - name: win-arm64
+            os: windows-latest
+            rid: win-arm64
+            aot: true
+            kind: zip
+          # macOS:AOT 在原生 runner 上编译;若 Avalonia NativeAOT 在 macOS 不顺,
+          # 把下面两个单元 aot 改为 false(自包含)即可,无需改其他配置
+          - name: osx-x64
+            os: macos-15-intel
+            rid: osx-x64
+            aot: true
+            kind: tar
+          - name: osx-arm64
+            os: macos-15
+            rid: osx-arm64
+            aot: true
+            kind: tar
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+          cache: true
+
+      - name: Install AOT prerequisites (Linux)
+        if: runner.os == 'Linux' && matrix.aot
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+
+      - name: Publish ConsoleApp
+        shell: bash
+        run: |
+          ARGS="-c Release"
+          if [ -n "${{ matrix.rid }}" ]; then ARGS="$ARGS -r ${{ matrix.rid }}"; fi
+          if [ "${{ matrix.aot }}" = "false" ]; then ARGS="$ARGS /p:PublishAot=false"; fi
+          if [ "${{ matrix.apphost }}" = "false" ]; then ARGS="$ARGS /p:UseAppHost=false"; fi
+          dotnet publish ConsoleApp/ConsoleApp.csproj $ARGS
+
+      - name: Publish DesktopApp
+        shell: bash
+        run: |
+          ARGS="-c Release"
+          if [ -n "${{ matrix.rid }}" ]; then ARGS="$ARGS -r ${{ matrix.rid }}"; fi
+          if [ "${{ matrix.aot }}" = "false" ]; then ARGS="$ARGS /p:PublishAot=false"; fi
+          if [ "${{ matrix.apphost }}" = "false" ]; then ARGS="$ARGS /p:UseAppHost=false"; fi
+          dotnet publish DesktopApp/DesktopApp.csproj $ARGS
+
+      - name: Package
+        shell: bash
+        run: |
+          set -euo pipefail
+          SUFFIX=""
+          if [ -n "${{ matrix.rid }}" ]; then SUFFIX="/${{ matrix.rid }}"; fi
+          BASE="bin/Release/net10.0${SUFFIX}/publish"
+          mkdir -p dist
+          if [ "${{ matrix.kind }}" = "zip" ]; then
+            (cd "ConsoleApp/$BASE" && tar -a -cf "$GITHUB_WORKSPACE/dist/ncmdump-net-${{ matrix.name }}.zip" .)
+            (cd "DesktopApp/$BASE" && tar -a -cf "$GITHUB_WORKSPACE/dist/ncmdump-net-gui-${{ matrix.name }}.zip" .)
+          else
+            (cd "ConsoleApp/$BASE" && tar -czf "$GITHUB_WORKSPACE/dist/ncmdump-net-${{ matrix.name }}.tar.gz" .)
+            (cd "DesktopApp/$BASE" && tar -czf "$GITHUB_WORKSPACE/dist/ncmdump-net-gui-${{ matrix.name }}.tar.gz" .)
+          fi
+          ls -la dist
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.name }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          VER="${GITHUB_REF_NAME#v}"
+          VER="${VER#v}"
+          echo "version=${VER}" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          pattern: release-*
+      - name: Create Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd assets
+          find . -type f \( -name '*.zip' -o -name '*.tar.gz' \) -exec mv {} . \;
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum *.zip *.tar.gz > SHA256SUMS
+          else
+            shasum -a 256 *.zip *.tar.gz > SHA256SUMS
+          fi
+          VERSION="${{ steps.version.outputs.version }}"
+          PRE_FLAG=""
+          if [[ "$VERSION" == *-* ]]; then PRE_FLAG="--prerelease"; fi
+          gh release create "v${VERSION}" *.zip *.tar.gz SHA256SUMS \
+            --title "v${VERSION}" --generate-notes $PRE_FLAG
+
+  # NuGet 发布保持人工 gate:仅 workflow_dispatch + 勾选 publishNuget 时执行
+  nuget:
+    name: Publish NuGet
+    if: github.event_name == 'workflow_dispatch' && inputs.publishNuget
+    needs: build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+          cache: true
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          VER="${{ inputs.version }}"
+          VER="${VER#v}"
+          if [ -z "${VER}" ]; then
+            echo "::error::发布 NuGet 必须填写 version input"
+            exit 1
+          fi
+          echo "version=${VER}" >> "$GITHUB_OUTPUT"
+      - name: Pack
+        run: dotnet pack LibNCM/LibNCM.csproj -c Release -o nupkg /p:Version=${{ steps.version.outputs.version }}
+      - name: Push package
+        run: dotnet nuget push nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate
+      - name: Push symbols
+        run: dotnet nuget push nupkg/*.snupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate
