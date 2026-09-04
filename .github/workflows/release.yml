@@ -145,6 +145,8 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
+      # gh release create 需要在 git 仓库内运行以解析 remote 信息
+      - uses: actions/checkout@v4
       - name: Resolve version
         id: version
         shell: bash
