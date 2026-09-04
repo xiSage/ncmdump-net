@@ -87,6 +87,9 @@ jobs:
         with:
           dotnet-version: 10.0.x
           cache: true
+          cache-dependency-path: |
+            **/*.csproj
+            **/Directory.Packages.props
 
       - name: Install AOT prerequisites (Linux)
         if: runner.os == 'Linux' && matrix.aot
@@ -184,6 +187,9 @@ jobs:
         with:
           dotnet-version: 10.0.x
           cache: true
+          cache-dependency-path: |
+            **/*.csproj
+            **/Directory.Packages.props
       - name: Resolve version
         id: version
         shell: bash
