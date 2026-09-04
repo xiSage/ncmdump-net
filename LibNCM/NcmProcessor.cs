@@ -60,10 +60,9 @@ public static class NcmProcessor
                 Format = ncm.Format,
                 Metadata = ncm.Metadata,
                 OutputFileName = $"{outputName}.{ncm.FormatExtension}",
-                OutputPath = outputPath
+                OutputPath = outputPath,
+                MetadataWarning = await TryFixMetadataAsync(ncm, options, cancellationToken).ConfigureAwait(false)
             };
-
-            result.MetadataWarning = await TryFixMetadataAsync(ncm, options, cancellationToken).ConfigureAwait(false);
             return result;
         }
         catch (Exception e) when (e is not OperationCanceledException)
@@ -102,11 +101,10 @@ public static class NcmProcessor
                 Success = true,
                 Format = ncm.Format,
                 Metadata = ncm.Metadata,
-                OutputFileName = ncm.OutputFileNameFor(sourceFileName)
+                OutputFileName = ncm.OutputFileNameFor(sourceFileName),
+                MetadataWarning = await TryFixMetadataAsync(ncm, options, cancellationToken).ConfigureAwait(false),
+                Data = await ncm.DumpToBytesAsync(cancellationToken).ConfigureAwait(false)
             };
-
-            result.MetadataWarning = await TryFixMetadataAsync(ncm, options, cancellationToken).ConfigureAwait(false);
-            result.Data = await ncm.DumpToBytesAsync(cancellationToken).ConfigureAwait(false);
             return result;
         }
         catch (Exception e) when (e is not OperationCanceledException)

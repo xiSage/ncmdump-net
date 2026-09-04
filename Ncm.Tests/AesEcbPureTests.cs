@@ -1,5 +1,5 @@
-using System.Security.Cryptography;
 using LibNCM;
+using System.Security.Cryptography;
 using Xunit;
 
 namespace Ncm.Tests;
@@ -51,7 +51,7 @@ public class AesEcbPureTests
     public void RejectsInvalidCiphertextLength()
     {
         var key = new byte[16];
-        Assert.Throws<ArgumentException>(() => AesEcbPure.Decrypt(key, Array.Empty<byte>()));
+        Assert.Throws<ArgumentException>(() => AesEcbPure.Decrypt(key, []));
         Assert.Throws<ArgumentException>(() => AesEcbPure.Decrypt(key, new byte[15]));
     }
 }

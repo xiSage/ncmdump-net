@@ -13,3 +13,7 @@ Five canonical triage roles with label strings equal to their names: `needs-tria
 ### Domain docs
 
 Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+## C# formatting
+
+Before committing any C# change, run `dotnet format --severity info`. Then run `dotnet format --severity info --verify-no-changes` to check for remaining issues; if it reports any, fix them by hand according to its output.

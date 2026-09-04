@@ -49,7 +49,7 @@ public class NcmHeaderParserTests
     [Fact]
     public void EmptyStream_IsNotAnNcmFile()
     {
-        using var ms = new MemoryStream(Array.Empty<byte>());
+        using var ms = new MemoryStream([]);
         Assert.Throws<NcmFileFormatException>(() => NcmHeaderParser.Parse(ms));
     }
 
@@ -113,7 +113,7 @@ public class NcmHeaderParserTests
     [Fact]
     public void UnknownAudioFormatThrows()
     {
-        var bogusAudio = new byte[] { 0x41, 0x42, 0x43, 0x44, 0x45, 0x46 }; // "ABCDEF"
+        var bogusAudio = "ABCDEF"u8.ToArray(); // "ABCDEF"
         var bytes = SyntheticNcmBuilder.BuildFile(audioPlaintext: bogusAudio);
         using var ms = new MemoryStream(bytes);
 

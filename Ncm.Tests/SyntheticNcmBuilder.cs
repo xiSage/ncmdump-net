@@ -1,6 +1,6 @@
+using LibNCM;
 using System.Security.Cryptography;
 using System.Text;
-using LibNCM;
 
 namespace Ncm.Tests;
 
