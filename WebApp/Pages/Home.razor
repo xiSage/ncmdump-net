@@ -14,7 +14,7 @@
         </div>
     </div>
 
-    <InputFile OnChange="OnFileSelected" multiple accept=".ncm" style="display:none" />
+    <InputFile @ref="fileInput" OnChange="OnFileSelected" multiple accept=".ncm" style="display:none" />
 
     @if (fileItems.Count > 0)
     {
@@ -53,7 +53,7 @@
 
         <div class="action-bar">
             <button class="btn btn-primary" disabled="@(!canProcess)" @onclick="ProcessFiles">
-                @(canProcess ? "开始处理" : "处理中...")
+                @(isReading ? "读取文件..." : canProcess ? "开始处理" : "处理中...")
             </button>
             <div class="action-bar-right">
                 <button class="btn" disabled="@(!hasFinishedFiles)" @onclick="ClearFinishedFiles">清除已完成</button>
@@ -75,12 +75,19 @@
 
 @code {
     private List<NcmFileItem> fileItems = new();
-    private bool canProcess = true;
+    private bool isReading = false;
+    private bool isProcessing = false;
     private bool isDragOver = false;
+    private InputFile? fileInput;
+    private (NcmFileItem Item, CancellationTokenSource Cancellation)? currentRead;
     private DotNetObjectReference<Home>? dotNetRef;
 
     private bool hasFiles => fileItems.Count > 0;
     private bool hasFinishedFiles => fileItems.Any(f => f.Status == NcmFileItem.NcmStatus.Finished);
+
+    // Derived, never assigned: a second writer would let a pick in the middle of a processing run
+    // re-enable the button and re-enter ProcessFiles concurrently.
+    private bool canProcess => !isReading && !isProcessing;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -101,74 +108,144 @@
     [JSInvokable]
     public async Task AddDroppedFile(string fileName, byte[] data)
     {
-        if (fileItems.Any(f => f.FileName == fileName)) return;
+        if (HasFile(fileName)) return;
         fileItems.Add(new NcmFileItem(fileName, data));
         StateHasChanged();
     }
 
+    private bool HasFile(string fileName) => fileItems.Any(f => f.FileName == fileName);
+
     private async Task TriggerFileInput()
     {
-        await JS.InvokeVoidAsync("eval", "document.querySelector('input[type=file]').click()");
+        // A second pick while a read is in flight would swap out the input's FileList that the
+        // running read is still copying from.
+        if (isReading || fileInput?.Element is not { } element) return;
+        await JS.InvokeVoidAsync("ncmApp.clickElement", element);
     }
 
     private async Task OnFileSelected(InputFileChangeEventArgs e)
     {
-        foreach (var file in e.GetMultipleFiles())
-        {
-            if (fileItems.Any(f => f.FileName == file.Name)) continue;
-            if (!file.Name.EndsWith(".ncm", StringComparison.OrdinalIgnoreCase)) continue;
+        if (isReading) return;
 
-            try
+        isReading = true;
+        StateHasChanged();
+
+        try
+        {
+            if (e.FileCount > BrowserFileReader.MaxFileCount)
             {
-                var ms = new MemoryStream();
-                await file.OpenReadStream(200 * 1024 * 1024).CopyToAsync(ms);
-                fileItems.Add(new NcmFileItem(file.Name, ms.ToArray()));
+                var tooMany = new NcmFileItem($"一次最多选择 {BrowserFileReader.MaxFileCount} 个文件");
+                tooMany.SetFailed($"已选择 {e.FileCount} 个文件");
+                fileItems.Add(tooMany);
+                StateHasChanged();
+                return;
             }
-            catch (Exception ex)
+
+            var files = e.GetMultipleFiles(BrowserFileReader.MaxFileCount);
+
+            for (var index = 0; index < files.Count; index++)
             {
+                var file = files[index];
+                if (HasFile(file.Name)) continue;
+
+                if (!file.Name.EndsWith(".ncm", StringComparison.OrdinalIgnoreCase))
+                {
+                    var rejected = new NcmFileItem(file.Name);
+                    rejected.SetFailed("不是 .ncm 文件");
+                    fileItems.Add(rejected);
+                    StateHasChanged();
+                    continue;
+                }
+
+                // The entry goes up before the bytes arrive: reading a multi-megabyte file out of
+                // the browser takes long enough that waiting for it looks like nothing happened.
                 var item = new NcmFileItem(file.Name);
-                item.SetFailed($"读取文件失败: {ex.Message}");
+                item.SetReading(0, file.Size);
                 fileItems.Add(item);
+                StateHasChanged();
+
+                using var cancellation = new CancellationTokenSource();
+                currentRead = (item, cancellation);
+                try
+                {
+                    var element = fileInput?.Element ?? throw new InvalidOperationException("文件输入框尚未就绪");
+                    var data = await BrowserFileReader.ReadAsync(
+                        JS,
+                        element,
+                        index,
+                        file.Size,
+                        read =>
+                        {
+                            item.SetReading(read, file.Size);
+                            StateHasChanged();
+                        },
+                        cancellationToken: cancellation.Token);
+                    item.SetData(data);
+                }
+                catch (OperationCanceledException)
+                {
+                    // The entry was removed (or the page is going away) while its bytes were
+                    // still arriving; nothing to report against an item that is already gone.
+                }
+                catch (Exception ex)
+                {
+                    item.SetFailed($"读取文件失败: {ex.Message}");
+                }
+                finally
+                {
+                    currentRead = null;
+                }
+
+                StateHasChanged();
             }
         }
-        StateHasChanged();
+        finally
+        {
+            isReading = false;
+            StateHasChanged();
+        }
     }
 
     private async Task ProcessFiles()
     {
         if (!canProcess) return;
-        canProcess = false;
+        isProcessing = true;
         StateHasChanged();
 
-        var pendingItems = fileItems.Where(f => f.Status == NcmFileItem.NcmStatus.Waiting || f.Status == NcmFileItem.NcmStatus.Failed).ToList();
-
-        foreach (var item in pendingItems)
+        try
         {
-            if (item.RawData == null)
+            var pendingItems = fileItems.Where(f => f.Status == NcmFileItem.NcmStatus.Waiting || f.Status == NcmFileItem.NcmStatus.Failed).ToList();
+
+            foreach (var item in pendingItems)
             {
-                item.SetFailed("文件数据不可用，请重新添加");
+                if (item.RawData == null)
+                {
+                    item.SetFailed("文件数据不可用，请重新添加");
+                    StateHasChanged();
+                    continue;
+                }
+
+                item.SetProcessing();
                 StateHasChanged();
-                continue;
-            }
 
-            item.SetProcessing();
-            StateHasChanged();
+                var result = await NcmDecryptService.DecryptAsync(item.RawData, item.FileName);
 
-            var result = await NcmDecryptService.DecryptAsync(item.RawData, item.FileName);
-
-            if (result.Success)
-            {
-                item.SetFinished(result.Data!, result.FileName!, result.Metadata);
+                if (result.Success)
+                {
+                    item.SetFinished(result.Data!, result.FileName!, result.Metadata);
+                }
+                else
+                {
+                    item.SetFailed(result.ErrorMessage ?? "未知错误");
+                }
+                StateHasChanged();
             }
-            else
-            {
-                item.SetFailed(result.ErrorMessage ?? "未知错误");
-            }
+        }
+        finally
+        {
+            isProcessing = false;
             StateHasChanged();
         }
-
-        canProcess = true;
-        StateHasChanged();
     }
 
     private async Task DownloadFile(NcmFileItem item)
@@ -181,6 +258,7 @@
 
     private void RemoveFile(NcmFileItem item)
     {
+        CancelReadOf(item);
         fileItems.Remove(item);
         StateHasChanged();
     }
@@ -199,12 +277,14 @@
 
     private void ClearAllFiles()
     {
+        CancelReadOf(null);
         fileItems.Clear();
         StateHasChanged();
     }
 
     private string GetStatusClass(NcmFileItem item) => item.Status switch
     {
+        NcmFileItem.NcmStatus.Reading => "status-processing",
         NcmFileItem.NcmStatus.Processing => "status-processing",
         NcmFileItem.NcmStatus.Finished => "status-finished",
         NcmFileItem.NcmStatus.Failed => "status-failed",
@@ -214,6 +294,7 @@
     private string GetStatusDotClass(NcmFileItem item) => item.Status switch
     {
         NcmFileItem.NcmStatus.Waiting => "dot-waiting",
+        NcmFileItem.NcmStatus.Reading => "dot-processing",
         NcmFileItem.NcmStatus.Processing => "dot-processing",
         NcmFileItem.NcmStatus.Finished => "dot-finished",
         NcmFileItem.NcmStatus.Failed => "dot-failed",
@@ -227,8 +308,21 @@
         _ => ""
     };
 
+    /// <summary>
+    ///   Stops the in-flight browser read when its entry — or every entry — is dropped, so a
+    ///   removed file stops spending interop round trips instead of finishing into nothing.
+    /// </summary>
+    private void CancelReadOf(NcmFileItem? item)
+    {
+        if (currentRead is { } read && (item is null || ReferenceEquals(read.Item, item)))
+        {
+            read.Cancellation.Cancel();
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
+        CancelReadOf(null);
         if (dotNetRef != null)
         {
             try

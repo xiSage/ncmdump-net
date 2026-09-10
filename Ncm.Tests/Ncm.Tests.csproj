@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LibNCM\LibNCM.csproj" />
+    <ProjectReference Include="..\WebApp\WebApp.csproj" />
   </ItemGroup>
 
 </Project>

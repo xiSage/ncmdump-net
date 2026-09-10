@@ -31,7 +31,7 @@ NCM 文件的解析结果：容器格式（`NcmFormat`）、歌曲元数据（`N
 ## 消费者
 - **CLI**（ConsoleApp）：命令行批处理,`async` 调用门面,打印进度。
 - **GUI**（DesktopApp）：Avalonia MVVM,`FileItem.Process` 驱动状态机,并发 4。
-- **Web**（WebApp）：Blazor WASM,`NcmDecryptService` 内存字节适配,不抓远程封面。
+- **Web**（WebApp）：Blazor WASM,`NcmDecryptService` 内存字节适配,不抓远程封面;选择器入列的 `.ncm` 由 `BrowserFileReader` 按 1 MiB 分段搬进 .NET（Blazor 自带 `OpenReadStream` 的 128 KiB 分段在安卓上慢到不可用,勿改回）,条目先出现再读取并带百分比进度;拖拽落盘仍整份经 `invokeMethodAsync` 交接。
 
 ## 相关决策
 见 `docs/adr/0001-split-neteasecloudmusicstream.md`（破坏性 2.0：拆 God 类为深零件 + 门面）。

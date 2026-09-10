@@ -12,7 +12,26 @@ public class NcmFileItem(string fileName, byte[]? rawData = null)
     public byte[]? RawData { get; private set; } = rawData;
     public NeteaseCloudMusicMetadata? Metadata { get; private set; }
 
-    public enum NcmStatus { Waiting, Processing, Finished, Failed }
+    public enum NcmStatus { Waiting, Reading, Processing, Finished, Failed }
+
+    /// <summary>
+    ///   Reports progress while the browser file is still being copied into memory, so a slow
+    ///   read shows up as a live entry instead of nothing at all.
+    /// </summary>
+    public void SetReading(long readBytes, long totalBytes)
+    {
+        Status = NcmStatus.Reading;
+        Message = totalBytes > 0
+            ? $"读取文件 {readBytes * 100 / totalBytes}%"
+            : "读取文件";
+    }
+
+    /// <summary>Attaches the bytes read from the browser and marks the item ready to process.</summary>
+    public void SetData(byte[] data)
+    {
+        RawData = data;
+        SetWaiting();
+    }
 
     public void SetProcessing()
     {
@@ -37,9 +56,14 @@ public class NcmFileItem(string fileName, byte[]? rawData = null)
 
     public void Reset()
     {
-        Status = NcmStatus.Waiting;
-        Message = "等待处理";
+        SetWaiting();
         Data = null;
         Metadata = null;
+    }
+
+    private void SetWaiting()
+    {
+        Status = NcmStatus.Waiting;
+        Message = "等待处理";
     }
 }

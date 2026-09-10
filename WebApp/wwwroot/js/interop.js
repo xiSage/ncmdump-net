@@ -59,6 +59,26 @@ window.ncmApp = {
         }
     },
 
+    // Opens the picker for the file input Blazor rendered. The click has to happen inside this
+    // call so the browser still counts it as user-activated.
+    clickElement: function (element) {
+        element.click();
+    },
+
+    // Reads `count` bytes at `offset` from the file at `index` of the given file input and hands
+    // them to .NET as a typed array (one bulk transfer per call). Blazor's own InputFile stream
+    // moves the same bytes in 128 KiB interop round trips, which on Android is slow enough that a
+    // multi-megabyte file looks like it was never picked at all.
+    readFileChunk: async function (fileInput, index, offset, count) {
+        const file = fileInput.files[index];
+        if (!file) {
+            return new Uint8Array(0);
+        }
+
+        const buffer = await file.slice(offset, offset + count).arrayBuffer();
+        return new Uint8Array(buffer);
+    },
+
     downloadFileFromStream: async function (fileName, streamRef) {
         const arrayBuffer = await streamRef.arrayBuffer();
         const blob = new Blob([arrayBuffer]);
