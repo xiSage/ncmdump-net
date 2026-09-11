@@ -1,17 +1,59 @@
 :root {
+    color-scheme: light;
+
     --primary: #e60026;
     --primary-hover: #cc0022;
+    --on-primary: #ffffff;
+    --primary-tint: #fff8f8;
     --bg: #f5f5f5;
     --surface: #ffffff;
+    --surface-hover: #f5f5f5;
     --border: #e0e0e0;
     --text: #333333;
     --text-secondary: #666666;
-    --text-muted: #999999;
-    --success: #4caf50;
-    --warning: #ff9800;
-    --error: #f44336;
+    --text-muted: #707070;
+    --success: #2e7d32;
+    --warning: #b45309;
+    --warning-tint: #fff8f0;
+    --error: #d32f2f;
+    --drag-overlay-bg: rgba(230, 0, 38, 0.08);
+    --spinner-track: #e0e0e0;
     --radius: 8px;
     --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* The only place the dark palette lives: every colour below is reached through a token, so a
+   manual theme switch later is an extra selector on this block rather than a rewrite. Values
+   keep the relationships the light palette has — --border sits at the same 1.32:1 against its
+   surface — except where one mode's value cannot survive the flip: #e60026 as text on #121212
+   is only 3.5:1, so --primary lightens and --on-primary becomes dark ink here, while over
+   there the dark-ink-on-white variants of --success/--warning/--error are the deeper ones.
+   Both palettes hold >=4.5:1 for text and >=3:1 for the status dots and item borders, both at
+   rest and on the hover tints, with one known exception: the dark --error label on the
+   --primary-tint hover (4.1:1), which lifting --error to #ff6b6b would clear. */
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: dark;
+
+        --primary: #ff5c73;
+        --primary-hover: #ff7a8c;
+        --on-primary: #1a1a1a;
+        --primary-tint: rgba(255, 92, 115, 0.12);
+        --bg: #121212;
+        --surface: #1e1e1e;
+        --surface-hover: #2a2a2a;
+        --border: #333333;
+        --text: #e8e8e8;
+        --text-secondary: #b0b0b0;
+        --text-muted: #9a9a9a;
+        --success: #66bb6a;
+        --warning: #ffb74d;
+        --warning-tint: rgba(255, 183, 77, 0.12);
+        --error: #ef5350;
+        --drag-overlay-bg: rgba(255, 92, 115, 0.10);
+        --spinner-track: #333333;
+        --shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
 }
 
 * {
@@ -87,7 +129,7 @@ body {
 
 .drop-zone:hover {
     border-color: var(--primary);
-    background: #fff5f5;
+    background: var(--primary-tint);
 }
 
 .drop-zone-content {
@@ -231,7 +273,7 @@ body {
 }
 
 .btn:hover:not(:disabled) {
-    background: var(--bg);
+    background: var(--surface-hover);
 }
 
 .btn:disabled {
@@ -241,7 +283,7 @@ body {
 
 .btn-primary {
     background: var(--primary);
-    color: white;
+    color: var(--on-primary);
     border-color: var(--primary);
     padding: 8px 24px;
     font-size: 14px;
@@ -258,7 +300,7 @@ body {
 }
 
 .btn-download:hover:not(:disabled) {
-    background: #fff5f5;
+    background: var(--primary-tint);
 }
 
 .btn-retry {
@@ -267,7 +309,7 @@ body {
 }
 
 .btn-retry:hover:not(:disabled) {
-    background: #fff8f0;
+    background: var(--warning-tint);
 }
 
 .btn-remove {
@@ -277,7 +319,7 @@ body {
 .btn-remove:hover:not(:disabled) {
     color: var(--error);
     border-color: var(--error);
-    background: #fff5f5;
+    background: var(--primary-tint);
 }
 
 .action-bar {
@@ -296,7 +338,7 @@ body {
 .drag-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(230, 0, 38, 0.08);
+    background: var(--drag-overlay-bg);
     border: 3px dashed var(--primary);
     z-index: 1000;
     display: flex;
@@ -364,7 +406,7 @@ body {
 
 .loading-progress circle {
     fill: none;
-    stroke: #e0e0e0;
+    stroke: var(--spinner-track);
     stroke-width: 0.6rem;
     transform-origin: 50% 50%;
     transform: rotate(-90deg);
