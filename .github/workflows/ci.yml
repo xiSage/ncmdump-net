@@ -124,9 +124,9 @@ jobs:
           cache-dependency-path: |
             **/*.csproj
             **/Directory.Packages.props
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v4
         with:
           languages: csharp
       - name: Build
         run: dotnet build ncmdump-net.slnx -c Release
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@v4
