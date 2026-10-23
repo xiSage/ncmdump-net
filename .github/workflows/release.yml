@@ -122,12 +122,13 @@ jobs:
           BASE="bin/Release/net10.0${SUFFIX}/publish"
           mkdir -p dist
           # 注意:全程使用相对路径 + tar -C,避免 Windows 上盘符路径被 bsdtar 当成 host:path
+          # --exclude='*.pdb':调试符号只用于排查,不进发布包(AOT 的符号能到 100MB 以上)
           if [ "${{ matrix.kind }}" = "zip" ]; then
-            tar -a -cf "dist/ncmdump-net-${{ matrix.name }}.zip" -C "ConsoleApp/$BASE" .
-            tar -a -cf "dist/ncmdump-net-gui-${{ matrix.name }}.zip" -C "DesktopApp/$BASE" .
+            tar -a -cf "dist/ncmdump-net-${{ matrix.name }}.zip" --exclude='*.pdb' -C "ConsoleApp/$BASE" .
+            tar -a -cf "dist/ncmdump-net-gui-${{ matrix.name }}.zip" --exclude='*.pdb' -C "DesktopApp/$BASE" .
           else
-            tar -czf "dist/ncmdump-net-${{ matrix.name }}.tar.gz" -C "ConsoleApp/$BASE" .
-            tar -czf "dist/ncmdump-net-gui-${{ matrix.name }}.tar.gz" -C "DesktopApp/$BASE" .
+            tar -czf "dist/ncmdump-net-${{ matrix.name }}.tar.gz" --exclude='*.pdb' -C "ConsoleApp/$BASE" .
+            tar -czf "dist/ncmdump-net-gui-${{ matrix.name }}.tar.gz" --exclude='*.pdb' -C "DesktopApp/$BASE" .
           fi
           ls -la dist
 
