@@ -10,7 +10,7 @@
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.1.4" />
     <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageVersion Include="ConsoleAppFramework" Version="5.7.13" />
+    <PackageVersion Include="ConsoleAppFramework" Version="5.8.0" />
     <PackageVersion Include="FluentAvaloniaUI" Version="3.1.0" />
     <PackageVersion Include="TagLibSharp" Version="2.3.0" />
     <PackageVersion Include="Xaml.Behaviors.Interactions.DragAndDrop" Version="12.0.7" />
